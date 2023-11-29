@@ -10,12 +10,13 @@
 #include <unordered_map>
 #include <list>
 #include <set>
+#include <chrono>
 #include "dataStructures.h"
 
 using namespace std;
 using json=nlohmann::json;
 
-struct Person 
+struct Person
 {
     string id;
     string first_name;
@@ -25,14 +26,49 @@ struct Person
     string children_last_name;
     string children_email;
 
-    Person* next; //for LL
-    Person* prev; //for DLL
+    Person* prev; //for LL
+    Person* next; //for DL
+
+};
+
+struct PersonBT
+{
+    string id;
+    string first_name;
+    string last_name;
+    string email;
+    string children_first_name;
+    string children_last_name;
+    string children_email;
+
+    PersonBT* left;
+    PersonBT* right;
+
+    PersonBT(const string& _id, const string& _first_name, const string& _last_name, const string& _email,
+           const string& _children_first_name, const string& _children_last_name, const string& _children_email)
+        : id(_id), first_name(_first_name), last_name(_last_name), email(_email),
+          children_first_name(_children_first_name), children_last_name(_children_last_name), children_email(_children_email),
+          left(nullptr), right(nullptr)
+    {}
 };
 
 
-array<Person, 4> getDataAsArray(const json& data) 
+struct SearchResult
 {
-    array<Person, 4> people; // Using 4 elements in JSON file
+    Person *person;
+    chrono::nanoseconds duration;
+};
+
+struct SearchResultForVector
+{
+    Person person;
+    chrono::nanoseconds duration;
+};
+
+
+array<Person, 10000> getDataAsArray(const json& data) 
+{
+    array<Person, 10000> people; // Using 10000 elements in JSON file
 
     for (size_t i=0; i<data.size(); i++) 
     {
@@ -60,29 +96,38 @@ array<Person, 4> getDataAsArray(const json& data)
     return people;
 }
 
-Person* linearSearchArray(const array<Person, 4>& people, const string& id) 
+SearchResult linearSearchArray(const array<Person, 10000>& people, const string& id) 
 {
-    for (const Person& person : people) 
+    auto start = chrono::high_resolution_clock::now();
+
+    for (size_t i = 0; i < people.size(); ++i) 
     {
-        if (person.id == id) {
-            return const_cast<Person*>(&person); // return pointer to the person
+        if (people[i].id == id) 
+        {
+            auto stop = chrono::high_resolution_clock::now();
+            return {const_cast<Person*>(&people[i]), chrono::duration_cast<chrono::nanoseconds>(stop - start)};
         }
     }
-    return nullptr; // nullptr if not found
+
+    auto stop = chrono::high_resolution_clock::now();
+    
+    return {nullptr, chrono::duration_cast<chrono::nanoseconds>(stop - start)};
 }
 
-void sortArray(array<Person, 4>& people)
+
+void sortArray(array<Person, 10000>& people)
 {
-    // Sort the array by id
+    //sorting by ID
     sort(people.begin(), people.end(), [](const Person& a, const Person& b)
     {
         return a.id < b.id;
     });
 }
 
-Person* binarySearchArray(array<Person, 4>& people, const string& id)
+SearchResult binarySearchArray(array<Person, 10000>& people, const string& id)
 {
-    sortArray(people);
+
+    auto start = chrono::steady_clock::now();
 
     int left = 0;
     int right = people.size() - 1;
@@ -94,26 +139,28 @@ Person* binarySearchArray(array<Person, 4>& people, const string& id)
 
         if (person.id == id)
         {
-            return const_cast<Person*>(&person);
+            auto stop = chrono::steady_clock::now();
+            return {const_cast<Person*>(&person), chrono::duration_cast<chrono::nanoseconds>(stop - start)};
         }
         else if (person.id < id)
         {
             left = middle + 1;
-        }
+        }   
         else
         {
             right = middle - 1;
         }
     }
 
-    return nullptr; // nullptr if not found
+    return {nullptr, chrono::nanoseconds(-1)};
 }
 
 vector<Person> getDataAsVector(const json& data) 
 {
     vector<Person> people;
 
-    for (const auto& item : data) {
+    for (const auto& item : data) 
+    {
         Person person;
         person.id=item.value("_id","not found");
         person.first_name=item.value("first_name","not found");
@@ -126,11 +173,12 @@ vector<Person> getDataAsVector(const json& data)
             person.children_first_name=children.value("first_name","not found");
             person.children_last_name=children.value("last_name","not found");
             person.children_email=children.value("email","not found");
-        } else 
+        } 
+        else 
         {
-            person.children_first_name="N/A";
-            person.children_last_name="N/A";
-            person.children_email="N/A";
+            person.children_first_name="NULL";
+            person.children_last_name="NULL";
+            person.children_email="NULL";
         }
 
         people.push_back(person);
@@ -139,44 +187,51 @@ vector<Person> getDataAsVector(const json& data)
     return people;
 }
 
-Person linearSearchVector(const vector<Person>& people, const string& searchId) 
+SearchResultForVector linearSearchVector(const vector<Person>& people, const string& searchId) 
 {
+    auto start = chrono::high_resolution_clock::now();
+
     for (const Person& person : people) 
     {
         if (person.id == searchId) 
         {
-            return person;
+            auto stop = chrono::high_resolution_clock::now();
+            return {person, chrono::duration_cast<chrono::nanoseconds>(stop - start)};
         }
     }
 
     Person notFoundPerson; // "not found" person if no such ID
     notFoundPerson.id = "not found";
-    return notFoundPerson;
+    return {notFoundPerson, chrono::nanoseconds(-1)};
 }
 
 void sortVector(vector<Person>& peopleVector) 
 {
-    // Use a lambda function to compare people by their 'id' field
+    // Lambda function to compare people by their ID
     sort(peopleVector.begin(), peopleVector.end(), [](const Person& a, const Person& b) {
         return a.id < b.id;
     });
 }
 
-int binarySearchVector(vector<Person>& peopleVector, const string& targetId) 
+SearchResultForVector binarySearchVector(const vector<Person>& peopleVector, const string& targetId) 
 {
-    sortVector(peopleVector);
+    vector<Person> tempPeople = peopleVector; // copy to not modify the original vector
+    sortVector(tempPeople);
+
+    auto start = chrono::high_resolution_clock::now();
 
     int left = 0;
-    int right = peopleVector.size() - 1;
+    int right = tempPeople.size() - 1;
 
     while (left <= right) 
     {
         int mid = left + (right - left) / 2;
-        if (peopleVector[mid].id == targetId) 
+        if (tempPeople[mid].id == targetId) 
         {
-            return mid; // found the target person
+            auto stop = chrono::high_resolution_clock::now();
+            return {tempPeople[mid], chrono::duration_cast<chrono::nanoseconds>(stop - start)};
         } 
-        else if (peopleVector[mid].id < targetId) 
+        else if (tempPeople[mid].id < targetId) 
         {
             left = mid + 1; // search right half
         } 
@@ -186,14 +241,18 @@ int binarySearchVector(vector<Person>& peopleVector, const string& targetId)
         }
     }
 
-    return -1; // target person not found
+    Person notFoundPerson; // "not found" person if no such ID
+    notFoundPerson.id = "not found";
+    return {notFoundPerson, chrono::nanoseconds(-1)};
 }
 
 
-list<Person> insertDataIntoLinkedList(const json& data) {
+list<Person> insertDataIntoLinkedList(const json& data) 
+{
     list<Person> people;
 
-    for (const auto& item : data) {
+    for (const auto& item : data) 
+    {
         Person person;
 
         person.id = item.value("_id", "not found");
@@ -201,15 +260,18 @@ list<Person> insertDataIntoLinkedList(const json& data) {
         person.last_name = item.value("last_name", "not found");
         person.email = item.value("email", "not found");
 
-        if (item.find("children") != item.end()) {
+        if (item.find("children") != item.end()) 
+        {
             const json& children = item["children"];
             person.children_first_name = children.value("first_name", "not found");
             person.children_last_name = children.value("last_name", "not found");
             person.children_email = children.value("email", "not found");
-        } else {
-            person.children_first_name = "N/A";
-            person.children_last_name = "N/A";
-            person.children_email = "N/A";
+        } 
+        else
+        {
+            person.children_first_name = "NULL";
+            person.children_last_name = "NULL";
+            person.children_email = "NULL";
         }
 
         people.push_back(person);
@@ -218,60 +280,74 @@ list<Person> insertDataIntoLinkedList(const json& data) {
     return people;
 }
 
-Person* linearSearchLinkedList(const list<Person>& peopleList, const string& targetID) {
-    for (auto& person : peopleList) {
-        if (person.id == targetID) {
-            return const_cast<Person*>(&person);
-        }
-    }
-    return nullptr; // Return nullptr if not found
-}
 
-bool compareByID(const Person& a, const Person& b) {
+
+bool compareByID(const Person& a, const Person& b) 
+{
     return a.id < b.id;
 }
 
-Person* binarySearchLinkedList(const list<Person>& peopleList, const string& targetID) {
-    list<Person> sortedList = peopleList;
-    sortedList.sort(compareByID);
+SearchResult linearSearchLinkedList(const list<Person>& peopleList, const string& targetID) 
+{
+    auto start = chrono::high_resolution_clock::now();
 
-    auto begin = sortedList.begin();
-    auto end = sortedList.end();
-
-    while (begin != end) {
-        auto mid = next(begin, distance(begin, end) / 2);
-
-        if (mid->id == targetID) {
-            return &(*mid);
-        } else if (mid->id < targetID) {
-            begin = next(mid);
-        } else {
-            end = mid;
+    for (const auto& person : peopleList) 
+    {
+        if (person.id == targetID) 
+        {
+            auto stop = chrono::high_resolution_clock::now();
+            return {const_cast<Person*>(&person), chrono::duration_cast<chrono::nanoseconds>(stop - start)};
         }
     }
 
-    return nullptr; // Return nullptr if not found
+    return {nullptr, chrono::nanoseconds(-1)};
 }
 
-list<Person> insertDataIntoDoublyLinkedList(const json& data) {
+SearchResult binarySearchLinkedList(const list<Person>& peopleList, const string& targetID) 
+{
+    // Sorted copy of the LL
+    list<Person> sortedList = peopleList;
+    sortedList.sort(compareByID);
+
+    auto start = chrono::high_resolution_clock::now();
+
+    for (const auto& person : sortedList) 
+    {
+        if (person.id == targetID) 
+        {
+            auto stop = chrono::high_resolution_clock::now();
+            return {const_cast<Person*>(&person), chrono::duration_cast<chrono::nanoseconds>(stop - start)};
+        }
+    }
+
+    return {nullptr, chrono::nanoseconds(-1)};
+}
+
+
+list<Person> insertDataIntoDoublyLinkedList(const json& data) 
+{
     list<Person> people;
 
-    for (const auto& item : data) {
+    for (const auto& item : data) 
+    {
         Person person;
         person.id = item.value("_id", "not found");
         person.first_name = item.value("first_name", "not found");
         person.last_name = item.value("last_name", "not found");
         person.email = item.value("email", "not found");
 
-        if (item.find("children") != item.end()) {
+        if (item.find("children") != item.end()) 
+        {
             const json& children = item["children"];
             person.children_first_name = children.value("first_name", "not found");
             person.children_last_name = children.value("last_name", "not found");
             person.children_email = children.value("email", "not found");
-        } else {
-            person.children_first_name = "N/A";
-            person.children_last_name = "N/A";
-            person.children_email = "N/A";
+        } 
+        else 
+        {
+            person.children_first_name = "NULL";
+            person.children_last_name = "NULL";
+            person.children_email = "NULL";
         }
 
         people.push_back(person);
@@ -280,26 +356,40 @@ list<Person> insertDataIntoDoublyLinkedList(const json& data) {
     return people;
 }
 
-Person* linearSearchDoublyLinkedList(const list<Person>& peopleList, const string& targetID) {
+SearchResult linearSearchDoublyLinkedList(const list<Person>& peopleList, const string& targetID) 
+{
+    auto start = chrono::high_resolution_clock::now();
+
     for (const Person& person : peopleList) {
-        if (person.id == targetID) {
-            return const_cast<Person*>(&person);
+        if (person.id == targetID) 
+        {
+            auto stop = chrono::high_resolution_clock::now();
+            return {const_cast<Person*>(&person), chrono::duration_cast<chrono::nanoseconds>(stop - start)};
         }
     }
-    return nullptr;
+
+    return {nullptr, chrono::nanoseconds(-1)}; 
 }
 
-Person* binarySearchDoublyLinkedList(const list<Person>& peopleList, const string& targetID) {
-    list<Person> sortedList = peopleList;  // Copy the list
-    sortedList.sort([](const Person& a, const Person& b) { return a.id < b.id; });
 
-    for (const Person& person : sortedList) {
-        if (person.id == targetID) {
-            return const_cast<Person*>(&person);
+SearchResult binarySearchDoublyLinkedList(const list<Person>& peopleList, const string& targetID) 
+{
+    
+    list<Person> sortedList = peopleList;  // copy of the DLL, as usual
+    sortedList.sort(compareByID);
+
+    auto start = chrono::high_resolution_clock::now();
+
+    for (const Person& person : sortedList) 
+    {
+        if (person.id == targetID) 
+        {
+            auto stop = chrono::high_resolution_clock::now();
+            return {const_cast<Person*>(&person), chrono::duration_cast<chrono::nanoseconds>(stop - start)};
         }
     }
 
-    return nullptr; // Return nullptr if not found
+    return {nullptr, chrono::nanoseconds(-1)};
 }
 
 
@@ -330,17 +420,22 @@ void pushDataToStack(const json& data, stack<Person>& peopleStack)
     }
 }
 
-Person* linearSearchStack(const stack<Person>& peopleStack, const string& searchID) {
+SearchResult linearSearchStack(const stack<Person> &peopleStack, const string &searchID)
+{
     stack<Person> tempStack = peopleStack;
-    
-    while (!tempStack.empty()) {
-        if (tempStack.top().id == searchID) {
-            return &tempStack.top();
+
+    auto start = chrono::high_resolution_clock::now();
+    while (!tempStack.empty())
+    {
+        if (tempStack.top().id == searchID)
+        {
+            auto stop = chrono::high_resolution_clock::now();
+            return {&tempStack.top(), chrono::duration_cast<chrono::nanoseconds>(stop - start)};
         }
         tempStack.pop();
     }
-    
-    return nullptr; // Return nullptr if the ID is not found
+
+    return {nullptr, chrono::nanoseconds(-1)};
 }
 
 queue<Person> getDataAsQueue(const json& data) 
@@ -374,384 +469,546 @@ queue<Person> getDataAsQueue(const json& data)
     return peopleQueue;
 }
 
-Person* linearSearchQueue(const queue<Person>& peopleQueue, const string& target) 
+SearchResult linearSearchQueue(const queue<Person>& peopleQueue, const string& target) 
 {
-    queue<Person> tempQueue = peopleQueue; // Create a temporary copy of the queue
+    queue<Person> tempQueue = peopleQueue; // Copy of queue, as always
 
+    auto start = chrono::high_resolution_clock::now();
     while (!tempQueue.empty()) 
     {
         if (tempQueue.front().id == target) 
         {
-            return &(tempQueue.front());
+            auto stop = chrono::high_resolution_clock::now();
+            return {&(tempQueue.front()), chrono::duration_cast<chrono::nanoseconds>(stop - start)};
         }
         tempQueue.pop();
     }
 
-    return nullptr; // Return nullptr if the target is not found
+    return {nullptr, chrono::nanoseconds(-1)};
 }
 
-unordered_map<string, Person> insertDataIntoBinaryTree(const json& data) {
-    unordered_map<string, Person> binaryTree;
+class BinaryTree
+{
+public:
+    BinaryTree() : root(nullptr) {}
 
-    for (const auto& person : data) {
-        Person p;
-        p.id = person.value("_id", "not found");
-        p.first_name = person.value("first_name", "not found");
-        p.last_name = person.value("last_name", "not found");
-        p.email = person.value("email", "not found");
+    void insertNode(PersonBT* person)
+    {
+        root = insert(root, person);
+    }
 
-        if (person.find("children") != person.end()) {
-            const json& children = person["children"];
-            p.children_first_name = children.value("first_name", "not found");
-            p.children_last_name = children.value("last_name", "not found");
-            p.children_email = children.value("email", "not found");
-        } else {
-            p.children_first_name = "N/A";
-            p.children_last_name = "N/A";
-            p.children_email = "N/A";
+    PersonBT* searchNode(const string& searchId) const
+    {
+        return search(root, searchId);
+    }
+
+    PersonBT* BFS(const string& searchId) const
+    {
+        return BFS(root, searchId);
+    }
+
+    PersonBT* DFS(const string& searchId) const
+    {
+        return DFS(root, searchId);
+    }
+
+    ~BinaryTree()
+    {
+        destroyTree(root);
+    }
+
+private:
+    PersonBT* root;
+
+    PersonBT* insert(PersonBT* node, PersonBT* person)
+    {
+        if (node == nullptr)
+        {
+            return person;
         }
 
-        binaryTree[p.id] = p; // Use the person's id as the key in the unordered_map
+        if (person->id < node->id)
+        {
+            node->left = insert(node->left, person);
+        }
+        else if (person->id > node->id)
+        {
+            node->right = insert(node->right, person);
+        }
+
+        return node;
     }
 
-    return binaryTree;
-}
+    PersonBT* search(PersonBT* node, const string& searchId) const
+    {
+        if (node == nullptr || node->id == searchId)
+        {
+            return node;
+        }
 
-void binarySearch(const unordered_map<string, Person>& binaryTree, const string& searchIdBT) {
-    auto it = binaryTree.find(searchIdBT);
-
-    if (it != binaryTree.end()) {
-        cout << "Person found by ID '" << searchIdBT << "' is " << it->second.first_name << " " << it->second.last_name << endl;
-    } else {
-        cout << "Person with ID '" << searchIdBT << "' not found" << endl;
+        if (searchId < node->id)
+        {
+            return search(node->left, searchId);
+        }
+        else
+        {
+            return search(node->right, searchId);
+        }
     }
-}
 
-Person BFS(const unordered_map<string, Person>& binaryTree, const string& searchIdBT) {
-    queue<string> q;
-    unordered_map<string, bool> visited;
+    PersonBT* BFS(PersonBT* root, const string& searchId) const
+    {
+        queue<PersonBT*> q;
+        q.push(root);
 
-    q.push(searchIdBT);
+        while (!q.empty())
+        {
+            PersonBT* current = q.front();
+            q.pop();
 
-    while (!q.empty()) {
-        string currentId = q.front();
-        q.pop();
-
-        auto it = binaryTree.find(currentId);
-
-        if (it != binaryTree.end()) {
-            if (visited.find(currentId) == visited.end()) {
-                visited[currentId] = true;
-
-                if (currentId == searchIdBT) {
-                    return it->second;
+            if (current != nullptr)
+            {
+                if (current->id == searchId)
+                {
+                    return current;
                 }
 
-                if (it->second.children_first_name != "N/A") {
-                    q.push(it->second.children_first_name);
-                    q.push(it->second.children_last_name);
-                }
+                q.push(current->left);
+                q.push(current->right);
             }
         }
+
+        return nullptr;
     }
 
-    return Person(); // Return an empty Person object if not found
-}
+    PersonBT* DFS(PersonBT* root, const string& searchId) const
+    {
+        stack<PersonBT*> s;
+        s.push(root);
 
-Person DFS(const unordered_map<string, Person>& binaryTree, const string& searchIdBT) {
-    stack<string> s;
-    unordered_map<string, bool> visited;
+        while (!s.empty())
+        {
+            PersonBT* current = s.top();
+            s.pop();
 
-    s.push(searchIdBT);
-
-    while (!s.empty()) {
-        string currentId = s.top();
-        s.pop();
-
-        auto it = binaryTree.find(currentId);
-
-        if (it != binaryTree.end()) {
-            if (visited.find(currentId) == visited.end()) {
-                visited[currentId] = true;
-
-                if (currentId == searchIdBT) {
-                    return it->second;
+            if (current != nullptr)
+            {
+                if (current->id == searchId)
+                {
+                    return current;
                 }
 
-                if (it->second.children_first_name != "N/A") {
-                    s.push(it->second.children_first_name);
-                    s.push(it->second.children_last_name);
-                }
+                s.push(current->right);
+                s.push(current->left);
             }
         }
+
+        return nullptr;
     }
 
-    return Person(); // Return an empty Person object if not found
+    void destroyTree(PersonBT* node)
+    {
+        if (node != nullptr)
+        {
+            destroyTree(node->left);
+            destroyTree(node->right);
+            delete node;
+        }
+    }
+};
+
+unordered_map<string, Person> insertDataIntoUnorderedMap(const json& data) 
+{
+    unordered_map<string, Person> peopleMap;
+
+    for (const auto& item : data) 
+    {
+        Person person;
+        person.id = item.value("_id", "not found");
+        person.first_name = item.value("first_name", "not found");
+        person.last_name = item.value("last_name", "not found");
+        person.email = item.value("email", "not found");
+
+        if (item.find("children") != item.end()) 
+        {
+            const json& children = item["children"];
+            person.children_first_name = children.value("first_name", "not found");
+            person.children_last_name = children.value("last_name", "not found");
+            person.children_email = children.value("email", "not found");
+        } 
+        else 
+        {
+            person.children_first_name = "NULL";
+            person.children_last_name = "NULL";
+            person.children_email = "NULL";
+        }
+
+        peopleMap[person.id] = person;
+    }
+
+    return peopleMap;
 }
+
+const Person* searchInUnorderedMap(const unordered_map<string, Person>& peopleMap, const string& searchID) 
+{
+    auto start = chrono::high_resolution_clock::now();
+    auto it = peopleMap.find(searchID);
+    if (it != peopleMap.end()) 
+    {
+        auto stop = chrono::high_resolution_clock::now();
+        cout << "Time taken by HASH-SEARCH on UNORDERED MAP: " << chrono::duration_cast<chrono::nanoseconds>(stop - start).count() << " nanoseconds" << endl;
+        // Person found in the map
+        return &(it->second);
+    } 
+    else 
+    {
+        // Person not found in the map
+        return nullptr;
+    }
+}
+
 
 int main() {
-    ifstream f("Mdata.json");
+    ifstream f("MockData10000.json");
     json data = json::parse(f);
     f.close(); 
 
     string dataStructure;
-    cout<<"Choose data structure: 'arr' - 'vec' - 'll' - 'dll' - 'sta' - 'que' - 'bt' - 'ht'"<<endl;
-    cin>>dataStructure;
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    if( dataStructure == "arr")
+    do
     {
-        cout<<"Using array:"<<endl;
-        array<Person, 4> peopleArray = getDataAsArray(data);
-        string searchIdArray, arraySA;
-        cout<<"Search algorithm: 'L' for Linear search - 'B' for Binary search"<<endl;
-        cin>>arraySA;
-        cout<<"Id of person to be found: "<<endl;
-        cin>>searchIdArray;
-        if(arraySA == "L")
+        cout<<"Choose data structure: 'arr' - 'vec' - 'll' - 'dll' - 'sta' - 'que' - 'bt' - 'ht' - 'exit' to quit"<<endl;
+        cin>>dataStructure;
+     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        if( dataStructure == "arr")
         {
-            Person* foundPersonArray = linearSearchArray(peopleArray, searchIdArray);
-            if (foundPersonArray) 
+            cout<<"Using array:"<<endl;
+            array<Person, 10000> peopleArray = getDataAsArray(data);
+            string searchIdArray, arraySA;
+            cout<<"Search algorithm: 'L' for Linear search - 'B' for Binary search "<<endl;
+            cin>>arraySA;
+            cout<<"Id of person to be found: "<<endl;
+            cin>>searchIdArray;
+            
+            if(arraySA == "L")
             {
-                cout << "Person found by ID '"<< searchIdArray << "' is " << foundPersonArray->first_name << " " << foundPersonArray->last_name << endl;
-                // Add more details of person later
-            } 
-            else 
-            {
-                cout << "Person with ID '" << searchIdArray <<"' not found"<< endl;
+                SearchResult resultArray = linearSearchArray(peopleArray, searchIdArray);
+                if (resultArray.person != nullptr)
+                {
+                    cout << "Person found by ID '" << searchIdArray << "' is " << resultArray.person->first_name << " " << resultArray.person->last_name << endl;
+                    cout << "Time taken by LINEAR SEARCH on ARRAY: " << resultArray.duration.count() << " nanoseconds" << endl;
+                }
+                else 
+                {
+                    cout << "Person with ID '" << searchIdArray <<"' not found"<< endl;
+                }
             }
-        }
-        else if (arraySA == "B") 
-        {
-            Person* foundPersonArray = binarySearchArray(peopleArray, searchIdArray);
-            if (foundPersonArray)
+            else if (arraySA == "B") 
             {
-                cout << "Person found by ID '" << searchIdArray << "' is " <<foundPersonArray->first_name << " " << foundPersonArray->last_name << endl;
-                // Add more details of person later
+                sortArray(peopleArray);
+                SearchResult resultArray = binarySearchArray(peopleArray, searchIdArray);
+                if (resultArray.person != nullptr)
+                {
+                    cout << "Person found by ID '" << searchIdArray << "' is " << resultArray.person->first_name << " " << resultArray.person->last_name << endl;
+                    cout << "Time taken by BINARY SEARCH on ARRAY: " << resultArray.duration.count() << " nanoseconds" << endl;
+                }
+                else
+                {
+                    cout << "Person with ID '" << searchIdArray << "' not found" << endl;
+                }
+            }
+            else {cout<<"No such search algorithm: '"<< arraySA <<"'"<<endl;}
+            
+        }
+        
+     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        else if( dataStructure == "vec")
+        {
+            vector<Person> peopleVector = getDataAsVector(data);
+            cout<<"Using vector:"<<endl;
+            string searchIdVector, VectorSA;
+            cout<<"Search algorithm: 'L' for Linear search - 'B' for Binary search"<<endl;
+            cin>> VectorSA;
+            cout<<"Id of person to be found: "<<endl;
+            cin>>searchIdVector;
+            if(VectorSA == "L")
+            {
+                SearchResultForVector resultVector = linearSearchVector(peopleVector, searchIdVector);
+                if (resultVector.person.id == "not found") 
+                {
+                    cout << "Person with ID '" << searchIdVector << "' not found" << endl;
+                } 
+                else 
+                {
+                    cout << "Person found by ID '" << searchIdVector << "' is " << resultVector.person.first_name << " " << resultVector.person.last_name << endl;
+                    cout << "Time taken by LINEAR SEARCH on VECTOR: " << resultVector.duration.count() << " nanoseconds" << endl;
+                }
+            }
+            else if (VectorSA == "B")
+            {
+                SearchResultForVector resultVector = binarySearchVector(peopleVector, searchIdVector);
+                if (resultVector.person.id == "not found") 
+                {
+                    cout << "Person with ID '" << searchIdVector << "' not found" << endl;
+                } 
+                else 
+                {
+                    cout << "Person found by ID '" << searchIdVector << "' is " << resultVector.person.first_name << " " << resultVector.person.last_name << endl;
+                    cout << "Time taken by BINARY SEARCH on VECTOR: " << resultVector.duration.count() << " nanoseconds" << endl;
+                }   
+            }
+            else{ cout<<"No such search algorithm: '"<< VectorSA <<"'"<<endl;}
+        }
+     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        else if( dataStructure == "ll")
+        {
+            list<Person> peopleLinkedList = insertDataIntoLinkedList(data);
+            cout<<"Using linked list:"<<endl;
+            string searchIdLL, LLSA;
+            cout<<"Search algorithm: 'L' for Linear search - 'B' for Binary search"<<endl;
+            cin>>LLSA;
+            cout<<"Id of person to be found: "<<endl;
+            cin>>searchIdLL;
+            
+            if(LLSA == "L")
+            {
+                SearchResult resultLL = linearSearchLinkedList(peopleLinkedList, searchIdLL);
+                if (resultLL.person != nullptr) {
+                    cout << "Person found by ID '" << searchIdLL << "' is " << resultLL.person->first_name << " " << resultLL.person->last_name << endl;
+                    cout << "Time taken by LINEAR SEARCH on LINKED LIST: " << resultLL.duration.count() << " nanoseconds" << endl;
+                }
+                    else 
+                {
+                    cout << "Person with ID '"<< searchIdLL <<"' not found" << endl;
+                }
+            }
+            else if (LLSA == "B")
+            {
+                SearchResult resultLL = binarySearchLinkedList(peopleLinkedList, searchIdLL);
+                if (resultLL.person != nullptr) {
+                    cout << "Person found by ID '" << searchIdLL << "' is " << resultLL.person->first_name << " " << resultLL.person->last_name << endl;
+                    cout << "Time taken by BINARY SEARCH on LINKED LIST: " << resultLL.duration.count() << " nanoseconds" << endl;
+                }  
+                else 
+                {
+                    cout << "Person with ID '"<< searchIdLL <<"' not found" << endl;
+                }
+            }
+            else{ cout<<"No such search algorithm: '"<< LLSA <<"'"<<endl;}
+        }
+     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        else if( dataStructure == "dll")
+        {
+            list<Person> peopleDoublyLinkedList = insertDataIntoDoublyLinkedList(data);
+            cout << "Using doubly linked list:" << endl;
+            string searchIdDLL, DLLSA;
+            cout<<"Search algorithm: 'L' for Linear search - 'B' for Binary search"<<endl;
+            cin>>DLLSA;
+            cout<<"Id of person to be found: "<<endl;
+            cin>>searchIdDLL;
+            if(DLLSA == "L")
+            {
+                SearchResult resultDLL = linearSearchDoublyLinkedList(peopleDoublyLinkedList, searchIdDLL);
+                if (resultDLL.person != nullptr) {
+                    cout << "Person found by ID '" << searchIdDLL << "' is " << resultDLL.person->first_name << " " << resultDLL.person->last_name << endl;
+                    cout << "Time taken by LINEAR SEARCH on DOUBLY LINKED LIST: " << resultDLL.duration.count() << " nanoseconds" << endl;
+                }
+                else 
+                {
+                    cout << "Person with ID " << searchIdDLL << " not found" << endl;
+                }
+            }
+            else if (DLLSA == "B")
+            {
+                SearchResult resultDLL = binarySearchDoublyLinkedList(peopleDoublyLinkedList, searchIdDLL);
+                if (resultDLL.person != nullptr) {
+                    cout << "Person found by ID '" << searchIdDLL << "' is " << resultDLL.person->first_name << " " << resultDLL.person->last_name << endl;
+                    cout << "Time taken by BINARY SEARCH on DOUBLY LINKED LIST: " << resultDLL.duration.count() << " nanoseconds" << endl;
+                }
+                else 
+                {
+                    cout << "Person with ID " << searchIdDLL << " not found" << endl;
+                }
             }
             else
             {
-                cout << "Person with ID '" << searchIdArray << "' not found" << endl;
+                cout<<"No such search algorithm '"<< DLLSA <<"'"<<endl;
+            } 
+        }
+     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        else if( dataStructure == "sta")
+        {
+            stack<Person> peopleStack;
+            pushDataToStack(data, peopleStack);
+            cout << "Using stack:" << endl;
+            string searchIdStack, stackSA;
+            cout<<"Search algorithm: 'L' for Linear search"<<endl;
+            cin>>stackSA;
+            cout<<"Id of person to be found: "<<endl;
+            cin>>searchIdStack;
+            if(stackSA == "L")
+            {
+                SearchResult resultStack = linearSearchStack(peopleStack, searchIdStack);
+                if (resultStack.person != nullptr)
+                {
+                    cout << "Person found by ID '" << searchIdStack << "' is " << resultStack.person->first_name << " " << resultStack.person->last_name << endl;
+                    cout << "Time taken by LINEAR SEARCH on ARRAY: " << resultStack.duration.count() << " nanoseconds" << endl;
+                } 
+                else 
+                {
+                    cout << "Person with ID '" << searchIdStack << "' not found" << endl;
+                }
+            }
+            else
+            {
+                cout<<"No such search algorithm '"<< stackSA <<"'"<<endl;
             }
         }
-        else {cout<<"No such search algorithm: '"<< arraySA <<"'"<<endl;}
-    }
+     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        else if( dataStructure == "que")
+        {
+            queue<Person> peopleQueue = getDataAsQueue(data);
+            cout<<"Using queue: "<<endl;
+
+            string searchIdQueue, queueSA;
+            cout<<"Search algorithm: 'L' for Linear search"<<endl;
+            cin>>queueSA;
+            cout<<"Id of person to be found: "<<endl;
+            cin>>searchIdQueue;
+            
+            if(queueSA == "L")
+            {
+                SearchResult resultQueue = linearSearchQueue(peopleQueue, searchIdQueue);
+                if (resultQueue.person != nullptr)
+                {
+                    cout << "Person found by ID '" << searchIdQueue << "' is " << resultQueue.person->first_name << " " << resultQueue.person->last_name << endl;
+                    cout << "Time taken by LINEAR SEARCH on QUEUE: " << resultQueue.duration.count() << " nanoseconds" << endl;
+                }
+                else 
+                {
+                    cout << "Person with ID '" << searchIdQueue <<"' not found" << endl;
+                }
+            }
+            else
+            {
+                cout<<"No such search algorithm '"<< queueSA <<"'"<<endl;
+            }
+        }
+     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        else if( dataStructure == "bt")
+        {
+            BinaryTree binaryTree;
+
+            for (const auto& person : data)
+            {
+                PersonBT* p = new PersonBT(
+                    person.value("_id", "not found"),
+                    person.value("first_name", "not found"),
+                    person.value("last_name", "not found"),
+                    person.value("email", "not found"),
+                    person.value("children.first_name", "NULL"),
+                    person.value("children.last_name", "NULL"),
+                    person.value("children.email", "NULL")
+                );
+
+                binaryTree.insertNode(p);
+            }
+
+            string searchIdBT,BTSA;
+            cout<<"Search algorithm: 'BS' for Binary search - 'BF' for Breadth first search - 'DF' for Deoth first search"<<endl;
+            cin>>BTSA;
+            cout << "Id of person to be found: " << endl;
+            cin >> searchIdBT;
+
+            if( BTSA == "BS")
+            { 
+                auto start = chrono::high_resolution_clock::now();
+                PersonBT* foundPerson = binaryTree.searchNode(searchIdBT);
+                auto stop = chrono::high_resolution_clock::now();
+
+                if (foundPerson != nullptr)
+                {
+                    cout << "Person found by ID '" << searchIdBT << "' is " << foundPerson->first_name << " " << foundPerson->last_name << endl;
+                }
+                else
+                {
+                    cout << "Person with ID '" << searchIdBT << "' not found" << endl;
+                }
+
+                cout << "Time taken by BINARY SEARCH on BINARY TREE: " << chrono::duration_cast<chrono::nanoseconds>(stop - start).count() << " nanoseconds" << endl;
+            }
+               
+            else if (BTSA == "BF")
+            {
+                auto start = chrono::high_resolution_clock::now();
+                PersonBT* foundPerson = binaryTree.BFS(searchIdBT);
+                auto stop = chrono::high_resolution_clock::now();
+
+                if (foundPerson != nullptr)
+                {
+                    cout << "Person found by ID '" << searchIdBT << "' using BFS is " << foundPerson->first_name << " " << foundPerson->last_name << endl;
+                }
+                else
+                {
+                    cout << "Person with ID '" << searchIdBT << "' not found using BFS" << endl;
+                }
+
+                cout << "Time taken by BREADTH-FIRST SEARCH on BINARY TREE: " << chrono::duration_cast<chrono::nanoseconds>(stop - start).count() << " nanoseconds" << endl;
+            }
+            
+            else if (BTSA == "DF")
+            {
+                auto start = chrono::high_resolution_clock::now();
+                PersonBT* foundPerson = binaryTree.DFS(searchIdBT);
+                auto stop = chrono::high_resolution_clock::now();
+
+                if (foundPerson != nullptr)
+                {
+                    cout << "Person found by ID '" << searchIdBT << "' using DFS is " << foundPerson->first_name << " " << foundPerson->last_name << endl;
+                }
+                else
+                {
+                    cout << "Person with ID '" << searchIdBT << "' not found using DFS" << endl;
+                }
+
+                cout << "Time taken by DEPTH-FIRST SEARCH on BINARY TREE: " << chrono::duration_cast<chrono::nanoseconds>(stop - start).count() << " nanoseconds" << endl;
+                
+            }
+
+            else {cout<<"No such search algorithm '"<< BTSA <<"'"<<endl;}
+        }
+        //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        else if (dataStructure == "ht")
+        {
+            unordered_map<string, Person> peopleMap = insertDataIntoUnorderedMap(data);
+
+            string searchIdHT,HTSA;
+            cout<<"Search algorithm: 'HS' for Hash search"<<endl;
+            cin>>HTSA;
+            cout<<"Id of person to be found: "<<endl;
+            cin>>searchIdHT;
+
+            if (HTSA == "HS")
+            {
+                const Person* resultMap = searchInUnorderedMap(peopleMap, searchIdHT);
+                if (resultMap) {
+                    cout << "Person found by ID '" << searchIdHT << "' is " << resultMap->first_name << " " << resultMap->last_name << endl;
+                } else {
+                    cout << "Person with ID '" << searchIdHT << "' not found" << endl;
+                }
+            }
+            else{cout<<"No such search algorithm '"<< HTSA <<"'"<<endl;}
+
+        }
+        else if (dataStructure == "exit")
+        {
+            break;
+        }
+        else 
+        {
+            cout<<"No such data structure "<<dataStructure<<endl;
+        }
+    }   
+    while(dataStructure != "exit");
     
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    else if( dataStructure == "vec")
-    {
-        vector<Person> peopleVector = getDataAsVector(data);
-        cout<<"Using vector:"<<endl;
-        string searchIdVector, VectorSA;
-        cout<<"Search algorithm: 'L' for Linear search - 'B' for Binary search"<<endl;
-        cin>> VectorSA;
-        cout<<"Id of person to be found: "<<endl;
-        cin>>searchIdVector;
-        if(VectorSA == "L")
-        {
-            Person foundPersonVector = linearSearchVector(peopleVector, searchIdVector);
-            if (foundPersonVector.id == "not found") 
-            {
-                cout << "Person with ID '"<< searchIdVector << "' not found" << endl;
-            } 
-            else 
-            {
-            cout << "Person found by ID '"<< searchIdVector << "' is " << foundPersonVector.first_name <<" "<< foundPersonVector.last_name<<endl;
-            // Add more details of person later
-            }
-        }
-        else if (VectorSA == "B")
-        {
-            int indexVector = binarySearchVector(peopleVector, searchIdVector);
-            if (indexVector != -1) 
-            {
-                cout << "Person found by ID '" << searchIdVector << "' is " << peopleVector[indexVector].first_name<< " "<< peopleVector[indexVector].last_name<< endl;
-                // Add more details of person later
-            } 
-            else 
-            {
-                cout << "Person with ID '"<< searchIdVector << "' not found" << endl;
-            }    
-        }
-        else{ cout<<"No such search algorithm: '"<< VectorSA <<"'"<<endl;}
-    }
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    else if( dataStructure == "ll")
-    {
-        list<Person> peopleLinkedList = insertDataIntoLinkedList(data);
-        cout<<"Using linked list:"<<endl;
-        string searchIdLL, LLSA;
-        cout<<"Search algorithm: 'L' for Linear search - 'B' for Binary search"<<endl;
-        cin>>LLSA;
-        cout<<"Id of person to be found: "<<endl;
-        cin>>searchIdLL;
-        
-        if(LLSA == "L")
-        {
-            Person* resultLL = linearSearchLinkedList(peopleLinkedList, searchIdLL);
-            if (resultLL != nullptr) 
-            {
-                cout << "Person found by ID '" << searchIdLL <<"' is " << resultLL->first_name <<" "<< resultLL->last_name << endl;
-                // Add more details of person later
-            } 
-            else 
-            {
-                cout << "Person with ID '"<< searchIdLL <<"' not found" << endl;
-            }
-        }
-        else if (LLSA == "B")
-        {
-            Person* resultLL = binarySearchLinkedList(peopleLinkedList, searchIdLL);
-            if (resultLL) 
-            {
-                cout << "Person found by ID '"<< searchIdLL<< "' is " << resultLL->first_name << " " << resultLL->last_name << endl;
-            }  
-            else 
-            {
-                cout << "Person with ID '"<< searchIdLL <<"' not found" << endl;
-            }
-        }
-        else{ cout<<"No such search algorithm: '"<< LLSA <<"'"<<endl;}
-    }
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    else if( dataStructure == "dll")
-    {
-        list<Person> peopleDoublyLinkedList = insertDataIntoDoublyLinkedList(data);
-        cout << "Using doubly linked list:" << endl;
-        string searchIdDLL, DLLSA;
-        cout<<"Search algorithm: 'L' for Linear search - 'B' for Binary search"<<endl;
-        cin>>DLLSA;
-        cout<<"Id of person to be found: "<<endl;
-        cin>>searchIdDLL;
-        if(DLLSA == "L")
-        {
-            Person* resultDLL = linearSearchDoublyLinkedList(peopleDoublyLinkedList, searchIdDLL);
-            if (resultDLL) 
-            {
-                cout << "Person found by ID '"<<searchIdDLL<< "' is "<< resultDLL->first_name<< " "<< resultDLL->last_name << endl;
-            } 
-            else 
-            {
-                cout << "Person with ID " << searchIdDLL << " not found" << endl;
-            }
-        }
-        else if (DLLSA == "B")
-        {
-            Person* resultDLL = binarySearchDoublyLinkedList(peopleDoublyLinkedList, searchIdDLL);
-            if (resultDLL) 
-            {
-                cout << "Person found by ID '"<<searchIdDLL<< "' is "<< resultDLL->first_name<< " "<< resultDLL->last_name << endl;
-            } 
-            else 
-            {
-                cout << "Person with ID " << searchIdDLL << " not found" << endl;
-            }
-        }
-        else
-        {
-            cout<<"No such search algorithm '"<< DLLSA <<"'"<<endl;
-        } 
-    }
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    else if( dataStructure == "sta")
-    {
-        stack<Person> peopleStack;
-        pushDataToStack(data, peopleStack);
-        cout << "Using stack:" << endl;
-        string searchIdStack, stackSA;
-        cout<<"Search algorithm: 'L' for Linear search"<<endl;
-        cin>>stackSA;
-        cout<<"Id of person to be found: "<<endl;
-        cin>>searchIdStack;
-        if(stackSA == "L")
-        {
-            Person* resultStack = linearSearchStack(peopleStack, searchIdStack);
-            if (resultStack)
-            {
-                cout << "Person found by ID '" << searchIdStack << "' is " << resultStack->first_name << " "<< resultStack->last_name << endl;
-            } 
-            else 
-            {
-                cout << "Person with ID '" << searchIdStack << "' not found" << endl;
-            }
-        }
-        else
-        {
-            cout<<"No such search algorithm '"<< stackSA <<"'"<<endl;
-        }
-    }
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    else if( dataStructure == "que")
-    {
-        queue<Person> peopleQueue = getDataAsQueue(data);
-        cout<<"Using queue: "<<endl;
-
-        string searchIdQueue, queueSA;
-        cout<<"Search algorithm: 'L' for Linear search"<<endl;
-        cin>>queueSA;
-        cout<<"Id of person to be found: "<<endl;
-        cin>>searchIdQueue;
-        
-        if(queueSA == "L")
-        {
-            Person* resultQueue = linearSearchQueue(peopleQueue, searchIdQueue);
-            if (resultQueue) 
-            {
-                cout << "Person found by ID '" <<searchIdQueue <<"' is "<< resultQueue->first_name << " " << resultQueue->last_name <<endl;
-            } 
-            else 
-            {
-                cout << "Person with ID '" << searchIdQueue <<"' not found" << endl;
-            }
-        }
-        else
-        {
-            cout<<"No such search algorithm '"<< queueSA <<"'"<<endl;
-        }
-    }
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    else if( dataStructure == "bt")
-    {
-        unordered_map<string, Person> binaryTree = insertDataIntoBinaryTree(data);
-        cout << "Using binary tree:" << endl;
-        string searchIdBT,BTSA;
-        cout<<"Search algorithm: 'BS' for Binary search - 'BF' for Breadth first search - 'DF' for Deoth first search"<<endl;
-        cin>>BTSA;
-        cout<<"Id of person to be found: "<<endl;
-        cin>>searchIdBT;
-
-        if (BTSA == "BS")
-        {
-            binarySearch(binaryTree, searchIdBT);
-        }
-        else if (BTSA == "BF")
-        {
-            Person foundPerson = BFS(binaryTree, searchIdBT);
-            if (!foundPerson.id.empty()) {
-                cout << "Person found by ID '" << searchIdBT << "' is " << foundPerson.first_name << " " << foundPerson.last_name << endl;
-                // Add other details here later
-            } else {
-                cout << "Person with ID '" << searchIdBT << "' not found" << endl;
-            }
-        }
-        else if (BTSA == "DF")
-        {
-            Person foundPerson = DFS(binaryTree, searchIdBT);
-            if (!foundPerson.id.empty()) {
-                cout << "Person found by ID '" << searchIdBT << "' is " << foundPerson.first_name << " " << foundPerson.last_name << endl;
-                // Add other details here later
-            } else {
-                cout << "Person with ID '" << searchIdBT << "' not found" << endl;
-            }
-        }
-        else
-        {
-            cout<<"No such search algorithm '"<< BTSA <<"'"<<endl;
-        }    
-    }
-    else 
-    {
-        cout<<"No such data structure "<<dataStructure<<endl;
-    }
-git
     return 0;
 }
