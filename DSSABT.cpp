@@ -1,6 +1,6 @@
 #include <iostream>
 #include <fstream>
-#include "nlohmann/json.hpp"
+#include "nlohmann\json.hpp"
 #include <string>
 #include <vector>
 #include <array>
@@ -9,9 +9,7 @@
 #include <algorithm>
 #include <unordered_map>
 #include <list>
-#include <set>
 #include <chrono>
-#include "dataStructures.h"
 
 using namespace std;
 using json=nlohmann::json;
@@ -65,12 +63,12 @@ struct SearchResultForVector
     chrono::nanoseconds duration;
 };
 
-
-array<Person, 10000> getDataAsArray(const json& data) 
+ 
+array<Person, 10000> getDataAsArray(const json& data)
 {
     array<Person, 10000> people; // Using 10000 elements in JSON file
 
-    for (size_t i=0; i<data.size(); i++) 
+    for (size_t i=0; i<data.size(); i++)
     {
         const auto& item=data[i];
         Person& person=people[i];
@@ -79,13 +77,13 @@ array<Person, 10000> getDataAsArray(const json& data)
         person.last_name=item.value("last_name","not found");
         person.email=item.value("email","not found");
 
-        if (item.find("children") !=item.end()) 
+        if (item.find("children") !=item.end())
         {
             const json& children=item["children"];
             person.children_first_name=children.value("first_name", "not found");
             person.children_last_name=children.value("last_name", "not found");
             person.children_email=children.value("email", "not found");
-        } else 
+        } else
         {
             person.children_first_name="NULL";
             person.children_last_name="NULL";
@@ -96,13 +94,13 @@ array<Person, 10000> getDataAsArray(const json& data)
     return people;
 }
 
-SearchResult linearSearchArray(const array<Person, 10000>& people, const string& id) 
+SearchResult linearSearchArray(const array<Person, 10000>& people, const string& id)
 {
     auto start = chrono::high_resolution_clock::now();
 
-    for (size_t i = 0; i < people.size(); ++i) 
+    for (size_t i = 0; i < people.size(); ++i)
     {
-        if (people[i].id == id) 
+        if (people[i].id == id)
         {
             auto stop = chrono::high_resolution_clock::now();
             return {const_cast<Person*>(&people[i]), chrono::duration_cast<chrono::nanoseconds>(stop - start)};
@@ -110,7 +108,7 @@ SearchResult linearSearchArray(const array<Person, 10000>& people, const string&
     }
 
     auto stop = chrono::high_resolution_clock::now();
-    
+
     return {nullptr, chrono::duration_cast<chrono::nanoseconds>(stop - start)};
 }
 
@@ -127,7 +125,7 @@ void sortArray(array<Person, 10000>& people)
 SearchResult binarySearchArray(array<Person, 10000>& people, const string& id)
 {
 
-    auto start = chrono::steady_clock::now();
+    auto start = chrono::high_resolution_clock::now();
 
     int left = 0;
     int right = people.size() - 1;
@@ -139,13 +137,13 @@ SearchResult binarySearchArray(array<Person, 10000>& people, const string& id)
 
         if (person.id == id)
         {
-            auto stop = chrono::steady_clock::now();
+            auto stop = chrono::high_resolution_clock::now();
             return {const_cast<Person*>(&person), chrono::duration_cast<chrono::nanoseconds>(stop - start)};
         }
         else if (person.id < id)
         {
             left = middle + 1;
-        }   
+        }
         else
         {
             right = middle - 1;
@@ -155,11 +153,11 @@ SearchResult binarySearchArray(array<Person, 10000>& people, const string& id)
     return {nullptr, chrono::nanoseconds(-1)};
 }
 
-vector<Person> getDataAsVector(const json& data) 
+vector<Person> getDataAsVector(const json& data)
 {
     vector<Person> people;
 
-    for (const auto& item : data) 
+    for (const auto& item : data)
     {
         Person person;
         person.id=item.value("_id","not found");
@@ -167,14 +165,14 @@ vector<Person> getDataAsVector(const json& data)
         person.last_name=item.value("last_name","not found");
         person.email=item.value("email","not found");
 
-        if (item.find("children") !=item.end()) 
+        if (item.find("children") !=item.end())
         {
             const json& children=item["children"];
             person.children_first_name=children.value("first_name","not found");
             person.children_last_name=children.value("last_name","not found");
             person.children_email=children.value("email","not found");
-        } 
-        else 
+        }
+        else
         {
             person.children_first_name="NULL";
             person.children_last_name="NULL";
@@ -187,25 +185,25 @@ vector<Person> getDataAsVector(const json& data)
     return people;
 }
 
-SearchResultForVector linearSearchVector(const vector<Person>& people, const string& searchId) 
+SearchResultForVector linearSearchVector(const vector<Person>& people, const string& targetId)
 {
     auto start = chrono::high_resolution_clock::now();
 
-    for (const Person& person : people) 
+    for (const Person& person : people)
     {
-        if (person.id == searchId) 
+        if (person.id == targetId)
         {
             auto stop = chrono::high_resolution_clock::now();
             return {person, chrono::duration_cast<chrono::nanoseconds>(stop - start)};
         }
     }
 
-    Person notFoundPerson; // "not found" person if no such ID
+    Person notFoundPerson;
     notFoundPerson.id = "not found";
     return {notFoundPerson, chrono::nanoseconds(-1)};
 }
 
-void sortVector(vector<Person>& peopleVector) 
+void sortVector(vector<Person>& peopleVector)
 {
     // Lambda function to compare people by their ID
     sort(peopleVector.begin(), peopleVector.end(), [](const Person& a, const Person& b) {
@@ -213,45 +211,42 @@ void sortVector(vector<Person>& peopleVector)
     });
 }
 
-SearchResultForVector binarySearchVector(const vector<Person>& peopleVector, const string& targetId) 
+SearchResultForVector binarySearchVector(const vector<Person>& peopleVector, const string& targetId)
 {
-    vector<Person> tempPeople = peopleVector; // copy to not modify the original vector
-    sortVector(tempPeople);
-
     auto start = chrono::high_resolution_clock::now();
 
     int left = 0;
-    int right = tempPeople.size() - 1;
+    int right = peopleVector.size() - 1;
 
-    while (left <= right) 
+    while (left <= right)
     {
         int mid = left + (right - left) / 2;
-        if (tempPeople[mid].id == targetId) 
+        if (peopleVector[mid].id == targetId)
         {
             auto stop = chrono::high_resolution_clock::now();
-            return {tempPeople[mid], chrono::duration_cast<chrono::nanoseconds>(stop - start)};
-        } 
-        else if (tempPeople[mid].id < targetId) 
+            return {peopleVector[mid], chrono::duration_cast<chrono::nanoseconds>(stop - start)};
+        }
+        else if (peopleVector[mid].id < targetId)
         {
             left = mid + 1; // search right half
-        } 
-        else 
+        }
+        else
         {
             right = mid - 1; // search left half
         }
     }
 
-    Person notFoundPerson; // "not found" person if no such ID
+    Person notFoundPerson;
     notFoundPerson.id = "not found";
     return {notFoundPerson, chrono::nanoseconds(-1)};
 }
 
 
-list<Person> insertDataIntoLinkedList(const json& data) 
+list<Person> insertDataIntoLinkedList(const json& data)
 {
     list<Person> people;
 
-    for (const auto& item : data) 
+    for (const auto& item : data)
     {
         Person person;
 
@@ -260,13 +255,13 @@ list<Person> insertDataIntoLinkedList(const json& data)
         person.last_name = item.value("last_name", "not found");
         person.email = item.value("email", "not found");
 
-        if (item.find("children") != item.end()) 
+        if (item.find("children") != item.end())
         {
             const json& children = item["children"];
             person.children_first_name = children.value("first_name", "not found");
             person.children_last_name = children.value("last_name", "not found");
             person.children_email = children.value("email", "not found");
-        } 
+        }
         else
         {
             person.children_first_name = "NULL";
@@ -282,18 +277,18 @@ list<Person> insertDataIntoLinkedList(const json& data)
 
 
 
-bool compareByID(const Person& a, const Person& b) 
+bool compareByID(const Person& a, const Person& b)
 {
     return a.id < b.id;
 }
 
-SearchResult linearSearchLinkedList(const list<Person>& peopleList, const string& targetID) 
+SearchResult linearSearchLinkedList(const list<Person>& peopleList, const string& targetID)
 {
     auto start = chrono::high_resolution_clock::now();
 
-    for (const auto& person : peopleList) 
+    for (const auto& person : peopleList)
     {
-        if (person.id == targetID) 
+        if (person.id == targetID)
         {
             auto stop = chrono::high_resolution_clock::now();
             return {const_cast<Person*>(&person), chrono::duration_cast<chrono::nanoseconds>(stop - start)};
@@ -303,20 +298,28 @@ SearchResult linearSearchLinkedList(const list<Person>& peopleList, const string
     return {nullptr, chrono::nanoseconds(-1)};
 }
 
-SearchResult binarySearchLinkedList(const list<Person>& peopleList, const string& targetID) 
+SearchResult binarySearchLinkedList(const list<Person>& peopleList, const string& targetID)
 {
-    // Sorted copy of the LL
-    list<Person> sortedList = peopleList;
-    sortedList.sort(compareByID);
-
     auto start = chrono::high_resolution_clock::now();
 
-    for (const auto& person : sortedList) 
+    auto it = peopleList.begin();
+    auto end = peopleList.end();
+
+    while (it != end)
     {
-        if (person.id == targetID) 
+        if (it->id == targetID)
         {
             auto stop = chrono::high_resolution_clock::now();
-            return {const_cast<Person*>(&person), chrono::duration_cast<chrono::nanoseconds>(stop - start)};
+            return {const_cast<Person*>(&(*it)), chrono::duration_cast<chrono::nanoseconds>(stop - start)};
+        }
+
+        if (it->id < targetID)
+        {
+            ++it;
+        }
+        else
+        {
+            break;
         }
     }
 
@@ -324,11 +327,13 @@ SearchResult binarySearchLinkedList(const list<Person>& peopleList, const string
 }
 
 
-list<Person> insertDataIntoDoublyLinkedList(const json& data) 
+
+
+list<Person> insertDataIntoDoublyLinkedList(const json& data)
 {
     list<Person> people;
 
-    for (const auto& item : data) 
+    for (const auto& item : data)
     {
         Person person;
         person.id = item.value("_id", "not found");
@@ -336,14 +341,14 @@ list<Person> insertDataIntoDoublyLinkedList(const json& data)
         person.last_name = item.value("last_name", "not found");
         person.email = item.value("email", "not found");
 
-        if (item.find("children") != item.end()) 
+        if (item.find("children") != item.end())
         {
             const json& children = item["children"];
             person.children_first_name = children.value("first_name", "not found");
             person.children_last_name = children.value("last_name", "not found");
             person.children_email = children.value("email", "not found");
-        } 
-        else 
+        }
+        else
         {
             person.children_first_name = "NULL";
             person.children_last_name = "NULL";
@@ -356,33 +361,12 @@ list<Person> insertDataIntoDoublyLinkedList(const json& data)
     return people;
 }
 
-SearchResult linearSearchDoublyLinkedList(const list<Person>& peopleList, const string& targetID) 
+SearchResult linearSearchDoublyLinkedList(const list<Person>& peopleList, const string& targetID)
 {
     auto start = chrono::high_resolution_clock::now();
 
     for (const Person& person : peopleList) {
-        if (person.id == targetID) 
-        {
-            auto stop = chrono::high_resolution_clock::now();
-            return {const_cast<Person*>(&person), chrono::duration_cast<chrono::nanoseconds>(stop - start)};
-        }
-    }
-
-    return {nullptr, chrono::nanoseconds(-1)}; 
-}
-
-
-SearchResult binarySearchDoublyLinkedList(const list<Person>& peopleList, const string& targetID) 
-{
-    
-    list<Person> sortedList = peopleList;  // copy of the DLL, as usual
-    sortedList.sort(compareByID);
-
-    auto start = chrono::high_resolution_clock::now();
-
-    for (const Person& person : sortedList) 
-    {
-        if (person.id == targetID) 
+        if (person.id == targetID)
         {
             auto stop = chrono::high_resolution_clock::now();
             return {const_cast<Person*>(&person), chrono::duration_cast<chrono::nanoseconds>(stop - start)};
@@ -393,9 +377,41 @@ SearchResult binarySearchDoublyLinkedList(const list<Person>& peopleList, const 
 }
 
 
-void pushDataToStack(const json& data, stack<Person>& peopleStack) 
+SearchResult binarySearchDoublyLinkedList(const list<Person>& peopleList, const string& targetID)
 {
-    for (const auto& item : data) 
+    auto start = chrono::high_resolution_clock::now();
+
+    auto itFront = peopleList.begin();
+    auto itBack = peopleList.end();
+    advance(itBack, -1);
+
+    while (itFront->id <= itBack->id)
+    {
+        auto mid = next(itFront, distance(itFront, itBack) / 2);
+
+        if (mid->id == targetID)
+        {
+            auto stop = chrono::high_resolution_clock::now();
+            return {const_cast<Person*>(&(*mid)), chrono::duration_cast<chrono::nanoseconds>(stop - start)};
+        }
+        else if (mid->id < targetID)
+        {
+            itFront = next(mid);
+        }
+        else
+        {
+            itBack = prev(mid);
+        }
+    }
+
+    return {nullptr, chrono::nanoseconds(-1)};
+}
+
+
+
+void pushDataToStack(const json& data, stack<Person>& peopleStack)
+{
+    for (const auto& item : data)
     {
         Person person;
         person.id=item.value("_id","not found");
@@ -403,13 +419,13 @@ void pushDataToStack(const json& data, stack<Person>& peopleStack)
         person.last_name=item.value("last_name","not found");
         person.email=item.value("email","not found");
 
-        if (item.find("children") !=item.end()) 
+        if (item.find("children") !=item.end())
         {
             const json& children=item["children"];
             person.children_first_name=children.value("first_name","not found");
             person.children_last_name=children.value("last_name","not found");
             person.children_email=children.value("email","not found");
-        } else 
+        } else
         {
             person.children_first_name="NULL";
             person.children_last_name="NULL";
@@ -420,14 +436,14 @@ void pushDataToStack(const json& data, stack<Person>& peopleStack)
     }
 }
 
-SearchResult linearSearchStack(const stack<Person> &peopleStack, const string &searchID)
+SearchResult linearSearchStack(const stack<Person> &peopleStack, const string &targetId)
 {
     stack<Person> tempStack = peopleStack;
 
     auto start = chrono::high_resolution_clock::now();
     while (!tempStack.empty())
     {
-        if (tempStack.top().id == searchID)
+        if (tempStack.top().id == targetId)
         {
             auto stop = chrono::high_resolution_clock::now();
             return {&tempStack.top(), chrono::duration_cast<chrono::nanoseconds>(stop - start)};
@@ -438,11 +454,11 @@ SearchResult linearSearchStack(const stack<Person> &peopleStack, const string &s
     return {nullptr, chrono::nanoseconds(-1)};
 }
 
-queue<Person> getDataAsQueue(const json& data) 
+queue<Person> getDataAsQueue(const json& data)
 {
     queue<Person> peopleQueue;
 
-    for (const auto& item : data) 
+    for (const auto& item : data)
     {
         Person person;
         person.id=item.value("_id","not found");
@@ -450,13 +466,13 @@ queue<Person> getDataAsQueue(const json& data)
         person.last_name=item.value("last_name","not found");
         person.email=item.value("email","not found");
 
-        if (item.find("children")!=item.end()) 
+        if (item.find("children")!=item.end())
         {
             const json& children=item["children"];
             person.children_first_name=children.value("first_name","not found");
             person.children_last_name=children.value("last_name","not found");
             person.children_email=children.value("email","not found");
-        } else 
+        } else
         {
             person.children_first_name="NULL";
             person.children_last_name="NULL";
@@ -469,14 +485,14 @@ queue<Person> getDataAsQueue(const json& data)
     return peopleQueue;
 }
 
-SearchResult linearSearchQueue(const queue<Person>& peopleQueue, const string& target) 
+SearchResult linearSearchQueue(const queue<Person>& peopleQueue, const string& target)
 {
-    queue<Person> tempQueue = peopleQueue; // Copy of queue, as always
+    queue<Person> tempQueue = peopleQueue;
 
     auto start = chrono::high_resolution_clock::now();
-    while (!tempQueue.empty()) 
+    while (!tempQueue.empty())
     {
-        if (tempQueue.front().id == target) 
+        if (tempQueue.front().id == target)
         {
             auto stop = chrono::high_resolution_clock::now();
             return {&(tempQueue.front()), chrono::duration_cast<chrono::nanoseconds>(stop - start)};
@@ -497,19 +513,19 @@ public:
         root = insert(root, person);
     }
 
-    PersonBT* searchNode(const string& searchId) const
+    PersonBT* searchNode(const string& targetId) const
     {
-        return search(root, searchId);
+        return search(root, targetId);
     }
 
-    PersonBT* BFS(const string& searchId) const
+    PersonBT* BFS(const string& targetId) const
     {
-        return BFS(root, searchId);
+        return BFS(root, targetId);
     }
 
-    PersonBT* DFS(const string& searchId) const
+    PersonBT* DFS(const string& targetId) const
     {
-        return DFS(root, searchId);
+        return DFS(root, targetId);
     }
 
     ~BinaryTree()
@@ -539,24 +555,24 @@ private:
         return node;
     }
 
-    PersonBT* search(PersonBT* node, const string& searchId) const
+    PersonBT* search(PersonBT* node, const string& targetId) const
     {
-        if (node == nullptr || node->id == searchId)
+        if (node == nullptr || node->id == targetId)
         {
             return node;
         }
 
-        if (searchId < node->id)
+        if (targetId < node->id)
         {
-            return search(node->left, searchId);
+            return search(node->left, targetId);
         }
         else
         {
-            return search(node->right, searchId);
+            return search(node->right, targetId);
         }
     }
 
-    PersonBT* BFS(PersonBT* root, const string& searchId) const
+    PersonBT* BFS(PersonBT* root, const string& targetId) const
     {
         queue<PersonBT*> q;
         q.push(root);
@@ -568,7 +584,7 @@ private:
 
             if (current != nullptr)
             {
-                if (current->id == searchId)
+                if (current->id == targetId)
                 {
                     return current;
                 }
@@ -581,7 +597,7 @@ private:
         return nullptr;
     }
 
-    PersonBT* DFS(PersonBT* root, const string& searchId) const
+    PersonBT* DFS(PersonBT* root, const string& targetId) const
     {
         stack<PersonBT*> s;
         s.push(root);
@@ -593,7 +609,7 @@ private:
 
             if (current != nullptr)
             {
-                if (current->id == searchId)
+                if (current->id == targetId)
                 {
                     return current;
                 }
@@ -617,11 +633,11 @@ private:
     }
 };
 
-unordered_map<string, Person> insertDataIntoUnorderedMap(const json& data) 
+unordered_map<string, Person> insertDataIntoUnorderedMap(const json& data)
 {
     unordered_map<string, Person> peopleMap;
 
-    for (const auto& item : data) 
+    for (const auto& item : data)
     {
         Person person;
         person.id = item.value("_id", "not found");
@@ -629,14 +645,14 @@ unordered_map<string, Person> insertDataIntoUnorderedMap(const json& data)
         person.last_name = item.value("last_name", "not found");
         person.email = item.value("email", "not found");
 
-        if (item.find("children") != item.end()) 
+        if (item.find("children") != item.end())
         {
             const json& children = item["children"];
             person.children_first_name = children.value("first_name", "not found");
             person.children_last_name = children.value("last_name", "not found");
             person.children_email = children.value("email", "not found");
-        } 
-        else 
+        }
+        else
         {
             person.children_first_name = "NULL";
             person.children_last_name = "NULL";
@@ -649,248 +665,479 @@ unordered_map<string, Person> insertDataIntoUnorderedMap(const json& data)
     return peopleMap;
 }
 
-const Person* searchInUnorderedMap(const unordered_map<string, Person>& peopleMap, const string& searchID) 
+const Person* searchInUnorderedMap(const unordered_map<string, Person>& peopleMap, const string& targetId)
 {
-    auto start = chrono::high_resolution_clock::now();
-    auto it = peopleMap.find(searchID);
-    if (it != peopleMap.end()) 
+    auto it = peopleMap.find(targetId);
+    if (it != peopleMap.end())
     {
-        auto stop = chrono::high_resolution_clock::now();
-        cout << "Time taken by HASH-SEARCH on UNORDERED MAP: " << chrono::duration_cast<chrono::nanoseconds>(stop - start).count() << " nanoseconds" << endl;
-        // Person found in the map
         return &(it->second);
-    } 
-    else 
+    }
+    else
     {
-        // Person not found in the map
         return nullptr;
     }
 }
 
+void resultFound(const string& targetId, const SearchResult& result, int& totalTime, int& currentRun, int& clockBottleneck,string searchAlgorithm, string dataStructure) 
+{
+
+    currentRun++;
+
+    if (result.duration.count() == 0) 
+    {
+        clockBottleneck++;
+        std::cout << "Run " << currentRun << " - clock bottleneck " << endl;
+    } 
+    else 
+    {
+        std::cout << "Run " << currentRun << " - " << result.duration.count() << " nanoseconds" << endl;
+    }
+
+    totalTime += result.duration.count();
+}
+
+void resultFoundVector(const string& targetId, const SearchResultForVector& result, int& totalTime, int& currentRun, int& clockBottleneck,string searchAlgorithm, string dataStructure) 
+{
+
+    currentRun++;
+
+    if (result.duration.count() == 0) 
+    {
+        clockBottleneck++;
+        std::cout << "Run " << currentRun << " - clock bottleneck " << endl;
+    } 
+    else 
+    {
+        std::cout << "Run " << currentRun << " - " << result.duration.count() << " nanoseconds" << endl;
+    }
+
+    totalTime += result.duration.count();
+}
+
+void writeResultsToFile(const string& filename, const vector<int>& runTimes, int averageTime) 
+{
+    ofstream outFile(filename);
+
+    if (outFile.is_open()) 
+    {
+        for (const auto& runTime : runTimes) 
+        {
+            outFile << runTime << '\n';
+        }
+
+        outFile << averageTime;
+
+        outFile.close();
+    } 
+    else 
+    {
+        std::cerr << "Error opening file: " << filename << endl;
+    }
+}
 
 int main() {
     ifstream f("MockData10000.json");
     json data = json::parse(f);
-    f.close(); 
+    f.close();
 
     string dataStructure;
-    do
-    {
-        cout<<"Choose data structure: 'arr' - 'vec' - 'll' - 'dll' - 'sta' - 'que' - 'bt' - 'ht' - 'exit' to quit"<<endl;
-        cin>>dataStructure;
-     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    int nrOfRuns;
+
+        std::cout<<"Choose data structure:\n'arr' for Array\n'vec' for Vector\n'll' for Linked list\n'dll' for Doubly linked list\n'sta' for Stack\n'que' for Queue\n'bt' for Binary tree\n'ht' for Hash table "<<endl;
+        std::cin>>dataStructure; //using std:: for "cout" and "cin" because of ambiguity issues betweeen libraries
+        std::cout<<"Nr of repetitions (1-100)"<<endl;
+        std::cin>>nrOfRuns;
+        bool found = false;
+        int currentRun = 0;
+        int clockBottleneck = 0;
+
+        if (nrOfRuns < 1 || nrOfRuns > 100)
+        {
+            std::cout<<"Nr of repetitions out of scope";
+        }
+        else
+        {
+             //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         if( dataStructure == "arr")
         {
-            cout<<"Using array:"<<endl;
+            std::cout<<"Using array:"<<endl;
             array<Person, 10000> peopleArray = getDataAsArray(data);
-            string searchIdArray, arraySA;
-            cout<<"Search algorithm: 'L' for Linear search - 'B' for Binary search "<<endl;
-            cin>>arraySA;
-            cout<<"Id of person to be found: "<<endl;
-            cin>>searchIdArray;
-            
+            string targetIdArray, arraySA;
+            std::cout<<"Search algorithm: 'L' for Linear search - 'B' for Binary search "<<endl;
+            std::cin>>arraySA;
+            std::cout<<"Id of person to be found: "<<endl;
+            std::cin>>targetIdArray;
+            int totalTimeArrayLinear = 0; //choosing to use int instead of float because the accuracy of float is negligible in nanoseconds
+            int totalTimeArrayBinary = 0;
+            vector<int> runTimesArrayLinear;
+            vector<int> runTimesArrayBinary;
+
             if(arraySA == "L")
             {
-                SearchResult resultArray = linearSearchArray(peopleArray, searchIdArray);
-                if (resultArray.person != nullptr)
+                for(int i = 0; i<nrOfRuns; i++)
                 {
-                    cout << "Person found by ID '" << searchIdArray << "' is " << resultArray.person->first_name << " " << resultArray.person->last_name << endl;
-                    cout << "Time taken by LINEAR SEARCH on ARRAY: " << resultArray.duration.count() << " nanoseconds" << endl;
+                    SearchResult resultArray = linearSearchArray(peopleArray, targetIdArray);
+                    if (resultArray.person != nullptr)
+                    {
+                        if (found == false)
+                        {
+                            std::cout << "Person found by ID '" << targetIdArray << "' is " << resultArray.person->first_name << " " << resultArray.person->last_name << endl;
+                            std::cout << "Time taken by LINEAR SEARCH on ARRAY: "<<endl;
+                        }
+                        found = true;
+                
+                        resultFound(targetIdArray, resultArray, totalTimeArrayLinear, currentRun, clockBottleneck,"Linear Search", "Array");
+                        runTimesArrayLinear.push_back(resultArray.duration.count());
+                    }
+                    else
+                    {
+                        std::cout << "Person with ID '" << targetIdArray <<"' not found"<< endl;
+                        break;
+                    }
                 }
-                else 
-                {
-                    cout << "Person with ID '" << searchIdArray <<"' not found"<< endl;
-                }
+                nrOfRuns= nrOfRuns - clockBottleneck;
+                totalTimeArrayLinear = totalTimeArrayLinear/nrOfRuns;
+                std::cout<<"Average time of all runs: "<<totalTimeArrayLinear<< " nanoseconds" <<endl;
+                writeResultsToFile("python/results.txt", runTimesArrayLinear, totalTimeArrayLinear);
             }
-            else if (arraySA == "B") 
+            else if (arraySA == "B")
             {
                 sortArray(peopleArray);
-                SearchResult resultArray = binarySearchArray(peopleArray, searchIdArray);
-                if (resultArray.person != nullptr)
+                for(int i = 0; i<nrOfRuns; i++)
                 {
-                    cout << "Person found by ID '" << searchIdArray << "' is " << resultArray.person->first_name << " " << resultArray.person->last_name << endl;
-                    cout << "Time taken by BINARY SEARCH on ARRAY: " << resultArray.duration.count() << " nanoseconds" << endl;
+                    SearchResult resultArray = binarySearchArray(peopleArray, targetIdArray);
+                    if (resultArray.person != nullptr)
+                    {
+                        if (found == false)
+                        {
+                            std::cout << "Person found by ID '" << targetIdArray << "' is " << resultArray.person->first_name << " " << resultArray.person->last_name << endl;
+                            std::cout << "Time taken by BINARY SEARCH on ARRAY: " << endl;
+                        }
+                        found = true;
+                        resultFound(targetIdArray, resultArray, totalTimeArrayBinary, currentRun, clockBottleneck,"Binary Search", "Array");
+                        runTimesArrayBinary.push_back(resultArray.duration.count());
+                        
+                    }
+                    else
+                    {
+                        std::cout << "Person with ID '" << targetIdArray << "' not found" << endl;
+                        break;
+                    }
                 }
-                else
-                {
-                    cout << "Person with ID '" << searchIdArray << "' not found" << endl;
-                }
+                nrOfRuns= nrOfRuns - clockBottleneck;
+                totalTimeArrayBinary = totalTimeArrayBinary/nrOfRuns;
+                std::cout<<"Average time of all runs: "<<totalTimeArrayBinary<< " nanoseconds" <<endl;
+                writeResultsToFile("python/results.txt", runTimesArrayBinary, totalTimeArrayBinary);
+
             }
-            else {cout<<"No such search algorithm: '"<< arraySA <<"'"<<endl;}
-            
+            else {std::cout<<"No such search algorithm: '"<< arraySA <<"'"<<endl;}
+
         }
-        
+
      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         else if( dataStructure == "vec")
         {
             vector<Person> peopleVector = getDataAsVector(data);
-            cout<<"Using vector:"<<endl;
-            string searchIdVector, VectorSA;
-            cout<<"Search algorithm: 'L' for Linear search - 'B' for Binary search"<<endl;
-            cin>> VectorSA;
-            cout<<"Id of person to be found: "<<endl;
-            cin>>searchIdVector;
+            std::cout<<"Using vector:"<<endl;
+            string targetIdVector, VectorSA;
+            std::cout<<"Search algorithm: 'L' for Linear search - 'B' for Binary search"<<endl;
+            std::cin>> VectorSA;
+            std::cout<<"Id of person to be found: "<<endl;
+            std::cin>>targetIdVector;
+            int totalTimeVectorLinear = 0;
+            int totalTimeVectorBinary = 0;
+            vector<int> runTimesVectorLinear;
+            vector<int> runTimesVectorBinary;
+
             if(VectorSA == "L")
             {
-                SearchResultForVector resultVector = linearSearchVector(peopleVector, searchIdVector);
-                if (resultVector.person.id == "not found") 
+                for(int i = 0; i<nrOfRuns; i++)
                 {
-                    cout << "Person with ID '" << searchIdVector << "' not found" << endl;
-                } 
-                else 
-                {
-                    cout << "Person found by ID '" << searchIdVector << "' is " << resultVector.person.first_name << " " << resultVector.person.last_name << endl;
-                    cout << "Time taken by LINEAR SEARCH on VECTOR: " << resultVector.duration.count() << " nanoseconds" << endl;
+                    SearchResultForVector resultVector = linearSearchVector(peopleVector, targetIdVector);
+                    if (resultVector.person.id == "not found")
+                    {
+                        std::cout << "Person with ID '" << targetIdVector << "' not found" << endl;
+                    }
+                    else
+                    {
+                        if (found == false)
+                        {
+                            std::cout << "Person found by ID '" << targetIdVector << "' is " << resultVector.person.first_name << " " << resultVector.person.last_name << endl;
+                            std::cout << "Time taken by LINEAR SEARCH on VECTOR: " << endl;
+                        }
+                        found = true;
+                        resultFoundVector(targetIdVector, resultVector, totalTimeVectorLinear, currentRun, clockBottleneck,"Linear Search", "Vector");
+                        runTimesVectorLinear.push_back(resultVector.duration.count());
+                    }
                 }
+                nrOfRuns= nrOfRuns - clockBottleneck;
+                totalTimeVectorLinear = totalTimeVectorLinear/nrOfRuns;
+                std::cout<<"Average time of all runs: "<<totalTimeVectorLinear<< " nanoseconds" <<endl;
+                writeResultsToFile("python/results.txt", runTimesVectorLinear, totalTimeVectorLinear);
+
             }
             else if (VectorSA == "B")
             {
-                SearchResultForVector resultVector = binarySearchVector(peopleVector, searchIdVector);
-                if (resultVector.person.id == "not found") 
+                sortVector(peopleVector);
+                for(int i = 0; i<nrOfRuns; i++)
                 {
-                    cout << "Person with ID '" << searchIdVector << "' not found" << endl;
-                } 
-                else 
-                {
-                    cout << "Person found by ID '" << searchIdVector << "' is " << resultVector.person.first_name << " " << resultVector.person.last_name << endl;
-                    cout << "Time taken by BINARY SEARCH on VECTOR: " << resultVector.duration.count() << " nanoseconds" << endl;
-                }   
+                    SearchResultForVector resultVector = binarySearchVector(peopleVector, targetIdVector);
+                    if (resultVector.person.id == "not found")
+                    {
+                        std::cout << "Person with ID '" << targetIdVector << "' not found" << endl;
+                    }
+                    else
+                    {
+                        if (found == false)
+                        {
+                            std::cout << "Person found by ID '" << targetIdVector << "' is " << resultVector.person.first_name << " " << resultVector.person.last_name << endl;
+                            std::cout << "Time taken by BINARY SEARCH on VECTOR: " <<endl;
+                        }
+                        found = true;
+                        resultFoundVector(targetIdVector, resultVector, totalTimeVectorBinary, currentRun, clockBottleneck,"Binary Search", "Vector");
+                        runTimesVectorBinary.push_back(resultVector.duration.count());
+                    }
+                }
+                nrOfRuns= nrOfRuns - clockBottleneck;
+                totalTimeVectorBinary = totalTimeVectorBinary/nrOfRuns;
+                std::cout<<"Average time of all runs: "<<totalTimeVectorBinary<< " nanoseconds" <<endl;
+                writeResultsToFile("python/results.txt", runTimesVectorBinary, totalTimeVectorBinary);
             }
-            else{ cout<<"No such search algorithm: '"<< VectorSA <<"'"<<endl;}
+            else{ std::cout<<"No such search algorithm: '"<< VectorSA <<"'"<<endl;}
         }
      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         else if( dataStructure == "ll")
         {
             list<Person> peopleLinkedList = insertDataIntoLinkedList(data);
-            cout<<"Using linked list:"<<endl;
-            string searchIdLL, LLSA;
-            cout<<"Search algorithm: 'L' for Linear search - 'B' for Binary search"<<endl;
-            cin>>LLSA;
-            cout<<"Id of person to be found: "<<endl;
-            cin>>searchIdLL;
-            
+            std::cout<<"Using linked list:"<<endl;
+            string targetIdLL, LLSA;
+            std::cout<<"Search algorithm: 'L' for Linear search - 'B' for Binary search"<<endl;
+            std::cin>>LLSA;
+            std::cout<<"Id of person to be found: "<<endl;
+            std::cin>>targetIdLL;
+            int totalTimeLlLinear = 0;
+            int totalTimeLlBinary = 0;
+            vector<int> runTimesLlLinear;
+            vector<int> runTimesLlBinary;
+
             if(LLSA == "L")
             {
-                SearchResult resultLL = linearSearchLinkedList(peopleLinkedList, searchIdLL);
-                if (resultLL.person != nullptr) {
-                    cout << "Person found by ID '" << searchIdLL << "' is " << resultLL.person->first_name << " " << resultLL.person->last_name << endl;
-                    cout << "Time taken by LINEAR SEARCH on LINKED LIST: " << resultLL.duration.count() << " nanoseconds" << endl;
-                }
-                    else 
+                for(int i = 0; i<nrOfRuns; i++)
                 {
-                    cout << "Person with ID '"<< searchIdLL <<"' not found" << endl;
+                    SearchResult resultLL = linearSearchLinkedList(peopleLinkedList, targetIdLL);
+                    if (resultLL.person != nullptr)
+                    {
+                        if (found == false)
+                        {
+                            std::cout << "Person found by ID '" << targetIdLL << "' is " << resultLL.person->first_name << " " << resultLL.person->last_name << endl;
+                            std::cout << "Time taken by LINEAR SEARCH on LINKED LIST: " <<endl;
+                        }
+                        found = true;
+                        resultFound(targetIdLL, resultLL, totalTimeLlLinear, currentRun, clockBottleneck,"Linear Search", "Linked List");
+                        runTimesLlLinear.push_back(resultLL.duration.count());
+                    }
+                        else
+                    {
+                        std::cout << "Person with ID '"<< targetIdLL <<"' not found" << endl;
+                    }
                 }
+                nrOfRuns= nrOfRuns - clockBottleneck;
+                totalTimeLlLinear = totalTimeLlLinear/nrOfRuns;
+                std::cout<<"Average time of all runs: "<<totalTimeLlLinear<< " nanoseconds" <<endl;
+                writeResultsToFile("python/results.txt", runTimesLlLinear, totalTimeLlLinear);
+
             }
             else if (LLSA == "B")
             {
-                SearchResult resultLL = binarySearchLinkedList(peopleLinkedList, searchIdLL);
-                if (resultLL.person != nullptr) {
-                    cout << "Person found by ID '" << searchIdLL << "' is " << resultLL.person->first_name << " " << resultLL.person->last_name << endl;
-                    cout << "Time taken by BINARY SEARCH on LINKED LIST: " << resultLL.duration.count() << " nanoseconds" << endl;
-                }  
-                else 
+                peopleLinkedList.sort(compareByID);
+                for(int i = 0; i<nrOfRuns; i++)
                 {
-                    cout << "Person with ID '"<< searchIdLL <<"' not found" << endl;
+                    SearchResult resultLL = binarySearchLinkedList(peopleLinkedList, targetIdLL);
+                    if (resultLL.person != nullptr)
+                    {
+                        if (found == false)
+                        {
+                            std::cout << "Person found by ID '" << targetIdLL << "' is " << resultLL.person->first_name << " " << resultLL.person->last_name << endl;
+                            std::cout << "Time taken by BINARY SEARCH on LINKED LIST: " <<endl;
+                        }
+                        found = true;
+                        resultFound(targetIdLL, resultLL, totalTimeLlBinary, currentRun, clockBottleneck,"Binary Search", "Linked List");
+                        runTimesLlBinary.push_back(resultLL.duration.count());
+                    }
+                    else
+                    {
+                        std::cout << "Person with ID '" << targetIdLL << "' not found" << endl;
+                    }
                 }
+                nrOfRuns= nrOfRuns - clockBottleneck;
+                totalTimeLlBinary = totalTimeLlBinary/nrOfRuns;
+                std::cout<<"Average time of all runs: "<<totalTimeLlBinary<< " nanoseconds" <<endl;
+                writeResultsToFile("python/results.txt", runTimesLlBinary, totalTimeLlBinary);
             }
-            else{ cout<<"No such search algorithm: '"<< LLSA <<"'"<<endl;}
+            else{ std::cout<<"No such search algorithm: '"<< LLSA <<"'"<<endl;}
         }
      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         else if( dataStructure == "dll")
         {
             list<Person> peopleDoublyLinkedList = insertDataIntoDoublyLinkedList(data);
-            cout << "Using doubly linked list:" << endl;
-            string searchIdDLL, DLLSA;
-            cout<<"Search algorithm: 'L' for Linear search - 'B' for Binary search"<<endl;
-            cin>>DLLSA;
-            cout<<"Id of person to be found: "<<endl;
-            cin>>searchIdDLL;
+            std::cout << "Using doubly linked list:" << endl;
+            string targetIdDLL, DLLSA;
+            std::cout<<"Search algorithm: 'L' for Linear search - 'B' for Binary search"<<endl;
+            std::cin>>DLLSA;
+            std::cout<<"Id of person to be found: "<<endl;
+            std::cin>>targetIdDLL;
+            int totalTimeDllLinear = 0;
+            int totalTimeDllBinary = 0;
+            vector<int> runTimesDllLinear;
+            vector<int> runTimesDllBinary;
+
             if(DLLSA == "L")
             {
-                SearchResult resultDLL = linearSearchDoublyLinkedList(peopleDoublyLinkedList, searchIdDLL);
-                if (resultDLL.person != nullptr) {
-                    cout << "Person found by ID '" << searchIdDLL << "' is " << resultDLL.person->first_name << " " << resultDLL.person->last_name << endl;
-                    cout << "Time taken by LINEAR SEARCH on DOUBLY LINKED LIST: " << resultDLL.duration.count() << " nanoseconds" << endl;
-                }
-                else 
+                for(int i = 0; i<nrOfRuns; i++)
                 {
-                    cout << "Person with ID " << searchIdDLL << " not found" << endl;
+                    SearchResult resultDLL = linearSearchDoublyLinkedList(peopleDoublyLinkedList, targetIdDLL);
+                    if (resultDLL.person != nullptr)
+                    {
+                        if (found == false)
+                        {
+                            std::cout << "Person found by ID '" << targetIdDLL << "' is " << resultDLL.person->first_name << " " << resultDLL.person->last_name << endl;
+                            std::cout << "Time taken by LINEAR SEARCH on DOUBLY LINKED LIST: " << endl;
+                        }
+                        found = true;
+                        resultFound(targetIdDLL, resultDLL, totalTimeDllLinear, currentRun, clockBottleneck,"Linear Search", "Doubly Linked List");
+                        runTimesDllLinear.push_back(resultDLL.duration.count());
+                    }
+                    else
+                    {
+                        std::cout << "Person with ID " << targetIdDLL << " not found" << endl;
+                    }
                 }
+                nrOfRuns= nrOfRuns - clockBottleneck;
+                totalTimeDllLinear = totalTimeDllLinear/nrOfRuns;
+                std::cout<<"Average time of all runs: "<<totalTimeDllLinear<< " nanoseconds" <<endl;
+                writeResultsToFile("python/results.txt", runTimesDllLinear, totalTimeDllLinear);
             }
             else if (DLLSA == "B")
             {
-                SearchResult resultDLL = binarySearchDoublyLinkedList(peopleDoublyLinkedList, searchIdDLL);
-                if (resultDLL.person != nullptr) {
-                    cout << "Person found by ID '" << searchIdDLL << "' is " << resultDLL.person->first_name << " " << resultDLL.person->last_name << endl;
-                    cout << "Time taken by BINARY SEARCH on DOUBLY LINKED LIST: " << resultDLL.duration.count() << " nanoseconds" << endl;
-                }
-                else 
+                peopleDoublyLinkedList.sort(compareByID);
+
+                for(int i = 0; i<nrOfRuns; i++)
                 {
-                    cout << "Person with ID " << searchIdDLL << " not found" << endl;
+                    SearchResult resultDLL = binarySearchDoublyLinkedList(peopleDoublyLinkedList, targetIdDLL);
+                    if (resultDLL.person != nullptr)
+                    {
+                        if (found == false)
+                        {
+                            std::cout << "Person found by ID '" << targetIdDLL << "' is " << resultDLL.person->first_name << " " << resultDLL.person->last_name << endl;
+                            std::cout << "Time taken by BINARY SEARCH on DOUBLY LINKED LIST: " << endl;
+                        }
+                        found = true;
+                        resultFound(targetIdDLL, resultDLL, totalTimeDllBinary, currentRun, clockBottleneck,"Binary Search", "Doubly Linked List");
+                        runTimesDllBinary.push_back(resultDLL.duration.count());
+                    }
+                    else
+                    {
+                        std::cout << "Person with ID " << targetIdDLL << " not found" << endl;
+                    }
                 }
+                nrOfRuns= nrOfRuns - clockBottleneck;
+                totalTimeDllBinary = totalTimeDllBinary/nrOfRuns;
+                std::cout<<"Average time of all runs: "<<totalTimeDllBinary<< " nanoseconds" <<endl;
+                writeResultsToFile("python/results.txt", runTimesDllBinary, totalTimeDllBinary);
             }
             else
             {
-                cout<<"No such search algorithm '"<< DLLSA <<"'"<<endl;
-            } 
+                std::cout<<"No such search algorithm '"<< DLLSA <<"'"<<endl;
+            }
         }
      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         else if( dataStructure == "sta")
         {
             stack<Person> peopleStack;
             pushDataToStack(data, peopleStack);
-            cout << "Using stack:" << endl;
-            string searchIdStack, stackSA;
-            cout<<"Search algorithm: 'L' for Linear search"<<endl;
-            cin>>stackSA;
-            cout<<"Id of person to be found: "<<endl;
-            cin>>searchIdStack;
+            std::cout << "Using stack:" << endl;
+            string targetIdStack, stackSA;
+            std::cout<<"Search algorithm: 'L' for Linear search"<<endl;
+            std::cin>>stackSA;
+            std::cout<<"Id of person to be found: "<<endl;
+            std::cin>>targetIdStack;
+            int totalTimeStackLinear = 0;
+            vector<int> runTimesStackLinear;
+
             if(stackSA == "L")
             {
-                SearchResult resultStack = linearSearchStack(peopleStack, searchIdStack);
-                if (resultStack.person != nullptr)
+                for(int i = 0; i<nrOfRuns; i++)
                 {
-                    cout << "Person found by ID '" << searchIdStack << "' is " << resultStack.person->first_name << " " << resultStack.person->last_name << endl;
-                    cout << "Time taken by LINEAR SEARCH on ARRAY: " << resultStack.duration.count() << " nanoseconds" << endl;
-                } 
-                else 
-                {
-                    cout << "Person with ID '" << searchIdStack << "' not found" << endl;
+                    SearchResult resultStack = linearSearchStack(peopleStack, targetIdStack);
+                    if (resultStack.person != nullptr)
+                    {
+                        if (found == false)
+                        {
+                            std::cout << "Person found by ID '" << targetIdStack << "' is " << resultStack.person->first_name << " " << resultStack.person->last_name << endl;
+                            std::cout << "Time taken by LINEAR SEARCH on STACK: " << endl;
+                        }
+                        found = true;
+                        resultFound(targetIdStack, resultStack, totalTimeStackLinear, currentRun, clockBottleneck,"Linear Search", "Stack");
+                        runTimesStackLinear.push_back(resultStack.duration.count());
+                    }
+                    else
+                    {
+                        std::cout << "Person with ID '" << targetIdStack << "' not found" << endl;
+                    }
                 }
+                nrOfRuns= nrOfRuns - clockBottleneck;
+                totalTimeStackLinear = totalTimeStackLinear/nrOfRuns;
+                std::cout<<"Average time of all runs: "<<totalTimeStackLinear<< " nanoseconds" <<endl;
+                writeResultsToFile("python/results.txt", runTimesStackLinear, totalTimeStackLinear);
             }
             else
             {
-                cout<<"No such search algorithm '"<< stackSA <<"'"<<endl;
+                std::cout<<"No such search algorithm '"<< stackSA <<"'"<<endl;
             }
         }
      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         else if( dataStructure == "que")
         {
             queue<Person> peopleQueue = getDataAsQueue(data);
-            cout<<"Using queue: "<<endl;
+            std::cout<<"Using queue: "<<endl;
 
-            string searchIdQueue, queueSA;
-            cout<<"Search algorithm: 'L' for Linear search"<<endl;
-            cin>>queueSA;
-            cout<<"Id of person to be found: "<<endl;
-            cin>>searchIdQueue;
-            
+            string targetIdQueue, queueSA;
+            std::cout<<"Search algorithm: 'L' for Linear search"<<endl;
+            std::cin>>queueSA;
+            std::cout<<"Id of person to be found: "<<endl;
+            std::cin>>targetIdQueue;
+            int totalTimeQueueLinear = 0;
+            vector<int> runTimesQueueLinear;
+
             if(queueSA == "L")
             {
-                SearchResult resultQueue = linearSearchQueue(peopleQueue, searchIdQueue);
-                if (resultQueue.person != nullptr)
+                for(int i = 0; i<nrOfRuns; i++)
                 {
-                    cout << "Person found by ID '" << searchIdQueue << "' is " << resultQueue.person->first_name << " " << resultQueue.person->last_name << endl;
-                    cout << "Time taken by LINEAR SEARCH on QUEUE: " << resultQueue.duration.count() << " nanoseconds" << endl;
+                    SearchResult resultQueue = linearSearchQueue(peopleQueue, targetIdQueue);
+                    if (resultQueue.person != nullptr)
+                    {
+                        if (found == false)
+                        {
+                            std::cout << "Person found by ID '" << targetIdQueue << "' is " << resultQueue.person->first_name << " " << resultQueue.person->last_name << endl;
+                            std::cout << "Time taken by LINEAR SEARCH on QUEUE: " << endl;
+                        }
+                        found = true;
+                        resultFound(targetIdQueue, resultQueue, totalTimeQueueLinear, currentRun, clockBottleneck,"Linear Search", "Queue");
+                        runTimesQueueLinear.push_back(resultQueue.duration.count());
+                    }
+                    else
+                    {
+                        std::cout << "Person with ID '" << targetIdQueue <<"' not found" << endl;
+                    }
                 }
-                else 
-                {
-                    cout << "Person with ID '" << searchIdQueue <<"' not found" << endl;
-                }
+                nrOfRuns= nrOfRuns - clockBottleneck;
+                totalTimeQueueLinear = totalTimeQueueLinear/nrOfRuns;
+                std::cout<<"Average time of all runs: "<<totalTimeQueueLinear<< " nanoseconds" <<endl;
+                writeResultsToFile("python/results.txt", runTimesQueueLinear, totalTimeQueueLinear);
             }
             else
             {
-                cout<<"No such search algorithm '"<< queueSA <<"'"<<endl;
+                std::cout<<"No such search algorithm '"<< queueSA <<"'"<<endl;
             }
         }
      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -911,104 +1158,208 @@ int main() {
                 );
 
                 binaryTree.insertNode(p);
+                //std::cout<<"inserted node"<<endl;
             }
 
-            string searchIdBT,BTSA;
-            cout<<"Search algorithm: 'BS' for Binary search - 'BF' for Breadth first search - 'DF' for Deoth first search"<<endl;
-            cin>>BTSA;
-            cout << "Id of person to be found: " << endl;
-            cin >> searchIdBT;
+            string targetIdBT,BTSA;
+            std::cout<<"Search algorithm: 'BS' for Binary search - 'BF' for Breadth first search - 'DF' for Deoth first search"<<endl;
+            std::cin>>BTSA;
+            std::cout << "Id of person to be found: " << endl;
+            std::cin >> targetIdBT;
+            int totalTimeBsBinaryTree = 0;
+            int totalTimeBfBinaryTree = 0;
+            int totalTimeDfBinaryTree = 0;
+            vector<int> runTimesBs;
+            vector<int> runTimesBf;
+            vector<int> runTimesDf;
 
             if( BTSA == "BS")
-            { 
-                auto start = chrono::high_resolution_clock::now();
-                PersonBT* foundPerson = binaryTree.searchNode(searchIdBT);
-                auto stop = chrono::high_resolution_clock::now();
-
-                if (foundPerson != nullptr)
+            {
+                for(int i = 0; i<nrOfRuns; i++)
                 {
-                    cout << "Person found by ID '" << searchIdBT << "' is " << foundPerson->first_name << " " << foundPerson->last_name << endl;
-                }
-                else
-                {
-                    cout << "Person with ID '" << searchIdBT << "' not found" << endl;
-                }
+                    auto start = chrono::high_resolution_clock::now();
+                    PersonBT* foundPerson = binaryTree.searchNode(targetIdBT);
+                    auto stop = chrono::high_resolution_clock::now();
 
-                cout << "Time taken by BINARY SEARCH on BINARY TREE: " << chrono::duration_cast<chrono::nanoseconds>(stop - start).count() << " nanoseconds" << endl;
+                    if (foundPerson != nullptr)
+                    {
+                        currentRun++;
+                        if (found == false)
+                        {
+                            std::cout << "Person found by ID '" << targetIdBT << "' is " << foundPerson->first_name << " " << foundPerson->last_name << endl;
+                            std::cout << "Time taken by BINARY SEARCH on BINARY TREE: " << endl;
+                        }
+                        found = true;
+                        if (chrono::duration_cast<chrono::nanoseconds>(stop - start).count() == 0)
+                        {
+                            clockBottleneck++;
+                            std::cout << "Run " << currentRun << " - clock bottleneck " << std::endl;
+                        }
+                        else
+                        {
+                            std::cout<< "Run " << currentRun << " - " << chrono::duration_cast<chrono::nanoseconds>(stop - start).count() << " nanoseconds" << endl;
+                            totalTimeBsBinaryTree = totalTimeBsBinaryTree + chrono::duration_cast<chrono::nanoseconds>(stop - start).count();
+                        }
+                        runTimesBs.push_back(chrono::duration_cast<chrono::nanoseconds>(stop - start).count());
+                        
+                    }
+                    else
+                    {
+                        std::cout << "Person with ID '" << targetIdBT << "' not found" << endl;
+                    }
+                }
+                nrOfRuns= nrOfRuns - clockBottleneck;
+                totalTimeBsBinaryTree = totalTimeBsBinaryTree/nrOfRuns;
+                std::cout<<"Average time of all runs: "<<totalTimeBsBinaryTree<< " nanoseconds" <<endl;
+                writeResultsToFile("python/results.txt", runTimesBs, totalTimeBsBinaryTree);
             }
-               
+
             else if (BTSA == "BF")
             {
-                auto start = chrono::high_resolution_clock::now();
-                PersonBT* foundPerson = binaryTree.BFS(searchIdBT);
-                auto stop = chrono::high_resolution_clock::now();
-
-                if (foundPerson != nullptr)
+                for(int i = 0; i<nrOfRuns; i++)
                 {
-                    cout << "Person found by ID '" << searchIdBT << "' using BFS is " << foundPerson->first_name << " " << foundPerson->last_name << endl;
-                }
-                else
-                {
-                    cout << "Person with ID '" << searchIdBT << "' not found using BFS" << endl;
-                }
+                    auto start = chrono::high_resolution_clock::now();
+                    PersonBT* foundPerson = binaryTree.BFS(targetIdBT);
+                    auto stop = chrono::high_resolution_clock::now();
 
-                cout << "Time taken by BREADTH-FIRST SEARCH on BINARY TREE: " << chrono::duration_cast<chrono::nanoseconds>(stop - start).count() << " nanoseconds" << endl;
+                    if (foundPerson != nullptr)
+                    {
+                        currentRun++;
+                        if (found == false)
+                        {
+                            std::cout << "Person found by ID '" << targetIdBT << "' using BFS is " << foundPerson->first_name << " " << foundPerson->last_name << endl;
+                            std::cout << "Time taken by BREADTH-FIRST SEARCH on BINARY TREE: " << endl;
+                        }
+                        found = true;
+                        if (chrono::duration_cast<chrono::nanoseconds>(stop - start).count() == 0)
+                        {
+                            clockBottleneck++;
+                            std::cout << "Run " << currentRun << " - clock bottleneck " << std::endl;
+                        }
+                        else
+                        {
+                            std::cout<< "Run " << currentRun << " - " << chrono::duration_cast<chrono::nanoseconds>(stop - start).count() << " nanoseconds" << endl;
+                            totalTimeBfBinaryTree = totalTimeBfBinaryTree + chrono::duration_cast<chrono::nanoseconds>(stop - start).count();
+                        }
+                        runTimesBf.push_back(chrono::duration_cast<chrono::nanoseconds>(stop - start).count());
+                        
+                    }
+                    else
+                    {
+                        std::cout << "Person with ID '" << targetIdBT << "' not found using BFS" << endl;
+                    }
+                }
+                nrOfRuns= nrOfRuns - clockBottleneck;
+                totalTimeBfBinaryTree = totalTimeBfBinaryTree/nrOfRuns;
+                std::cout<<"Average time of all runs: "<<totalTimeBfBinaryTree<< " nanoseconds" <<endl;
+                writeResultsToFile("python/results.txt", runTimesBf, totalTimeBfBinaryTree);
+
             }
-            
+
             else if (BTSA == "DF")
             {
-                auto start = chrono::high_resolution_clock::now();
-                PersonBT* foundPerson = binaryTree.DFS(searchIdBT);
-                auto stop = chrono::high_resolution_clock::now();
-
-                if (foundPerson != nullptr)
+                for(int i = 0; i<nrOfRuns; i++)
                 {
-                    cout << "Person found by ID '" << searchIdBT << "' using DFS is " << foundPerson->first_name << " " << foundPerson->last_name << endl;
-                }
-                else
-                {
-                    cout << "Person with ID '" << searchIdBT << "' not found using DFS" << endl;
-                }
+                    auto start = chrono::high_resolution_clock::now();
+                    PersonBT* foundPerson = binaryTree.DFS(targetIdBT);
+                    auto stop = chrono::high_resolution_clock::now();
 
-                cout << "Time taken by DEPTH-FIRST SEARCH on BINARY TREE: " << chrono::duration_cast<chrono::nanoseconds>(stop - start).count() << " nanoseconds" << endl;
-                
+                    if (foundPerson != nullptr)
+                    {
+                        currentRun++;
+                        if (found == false)
+                        {
+                            std::cout << "Person found by ID '" << targetIdBT << "' using DFS is " << foundPerson->first_name << " " << foundPerson->last_name << endl;
+                            std::cout << "Time taken by DEPTH-FIRST SEARCH on BINARY TREE: " << endl;
+                        }
+                        found = true;
+                        if (chrono::duration_cast<chrono::nanoseconds>(stop - start).count() == 0)
+                        {
+                            clockBottleneck++;
+                            std::cout << "Run " << currentRun << " - clock bottleneck " << std::endl;
+                        }
+                        else
+                        {
+                            std::cout<< "Run " << currentRun << " - " << chrono::duration_cast<chrono::nanoseconds>(stop - start).count() << " nanoseconds" << endl;
+                            totalTimeDfBinaryTree = totalTimeDfBinaryTree + chrono::duration_cast<chrono::nanoseconds>(stop - start).count();
+                        }
+                        runTimesDf.push_back(chrono::duration_cast<chrono::nanoseconds>(stop - start).count());
+                    }
+                    else
+                    {
+                        std::cout << "Person with ID '" << targetIdBT << "' not found using DFS" << endl;
+                    }
+                }
+                nrOfRuns= nrOfRuns - clockBottleneck;
+                totalTimeDfBinaryTree = totalTimeDfBinaryTree/nrOfRuns;
+                std::cout<<"Average time of all runs: "<<totalTimeDfBinaryTree<< " nanoseconds" <<endl;
+                writeResultsToFile("python/results.txt", runTimesDf, totalTimeDfBinaryTree);
             }
 
-            else {cout<<"No such search algorithm '"<< BTSA <<"'"<<endl;}
+            else {std::cout<<"No such search algorithm '"<< BTSA <<"'"<<endl;}
         }
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         else if (dataStructure == "ht")
         {
             unordered_map<string, Person> peopleMap = insertDataIntoUnorderedMap(data);
 
-            string searchIdHT,HTSA;
-            cout<<"Search algorithm: 'HS' for Hash search"<<endl;
-            cin>>HTSA;
-            cout<<"Id of person to be found: "<<endl;
-            cin>>searchIdHT;
+            string targetIdHT,HTSA;
+            std::cout<<"Search algorithm: 'HS' for Hash search"<<endl;
+            std::cin>>HTSA;
+            std::cout<<"Id of person to be found: "<<endl;
+            std::cin>>targetIdHT;
+            int totalTimeHtHashSearch = 0;
+            vector<int> runTimesHt;
 
             if (HTSA == "HS")
             {
-                const Person* resultMap = searchInUnorderedMap(peopleMap, searchIdHT);
-                if (resultMap) {
-                    cout << "Person found by ID '" << searchIdHT << "' is " << resultMap->first_name << " " << resultMap->last_name << endl;
-                } else {
-                    cout << "Person with ID '" << searchIdHT << "' not found" << endl;
+                for(int i = 0; i<nrOfRuns; i++)
+                {
+                    auto start = chrono::high_resolution_clock::now();
+                    const Person* resultMap = searchInUnorderedMap(peopleMap, targetIdHT);
+                    auto stop = chrono::high_resolution_clock::now();
+                    if (resultMap)
+                    {
+                        currentRun++;
+                        if (found == false)
+                        {
+                            std::cout << "Person found by ID '" << targetIdHT << "' is " << resultMap->first_name << " " << resultMap->last_name << endl;
+                            std::cout << "Time taken by HASH-SEARCH on UNORDERED MAP: " << endl;
+                        }
+                        found = true;
+                        if(chrono::duration_cast<chrono::nanoseconds>(stop - start).count() == 0)
+                        {
+                            clockBottleneck++;
+                            std::cout << "Run " << currentRun << " - clock bottleneck " << std::endl;
+                        }
+                        else
+                        {
+                            std::cout<< "Run " << currentRun << " - " << chrono::duration_cast<chrono::nanoseconds>(stop - start).count() << " nanoseconds" << endl;
+                            totalTimeHtHashSearch = totalTimeHtHashSearch + chrono::duration_cast<chrono::nanoseconds>(stop - start).count();
+                        }
+                        runTimesHt.push_back(chrono::duration_cast<chrono::nanoseconds>(stop - start).count());
+                    }
+                    else
+                    {
+                        std::cout << "Person with ID '" << targetIdHT << "' not found" << endl;
+                    }
                 }
+                nrOfRuns= nrOfRuns - clockBottleneck;
+                totalTimeHtHashSearch = totalTimeHtHashSearch/nrOfRuns;
+                std::cout<<"Average time of all runs: "<<totalTimeHtHashSearch<< " nanoseconds" <<endl;
+                writeResultsToFile("python/results.txt", runTimesHt, totalTimeHtHashSearch);
             }
-            else{cout<<"No such search algorithm '"<< HTSA <<"'"<<endl;}
+            else{std::cout<<"No such search algorithm '"<< HTSA <<"'"<<endl;}
 
         }
-        else if (dataStructure == "exit")
+
+        else
         {
-            break;
+            std::cout<<"No such data structure "<<dataStructure<<endl;
         }
-        else 
-        {
-            cout<<"No such data structure "<<dataStructure<<endl;
         }
-    }   
-    while(dataStructure != "exit");
-    
+
+
+
     return 0;
 }

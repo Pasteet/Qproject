@@ -1,0 +1,317 @@
+#include<iostream>
+#include<fstream>
+#include"nlohmann/json.hpp"
+#include<string>
+#include <list>
+
+
+using namespace std;
+using json=nlohmann::json;
+
+struct Person 
+{
+    string id;
+    string first_name;
+    string last_name;
+    string email;
+    string children_first_name;
+    string children_last_name;
+    string children_email;
+
+    Person* next; //for LL
+    Person* prev; //for DLL
+};
+
+struct HashNode 
+{
+    string key;
+    Person* value;
+    HashNode* next;
+};
+
+class HashTable 
+{
+public:
+    HashTable(int size);
+    ~HashTable();
+    void insert(string key, Person* value);
+    Person* search(string key);
+
+private:
+    int size;
+    vector<HashNode*> table;
+    int hash(string key);
+};
+
+HashTable::HashTable(int size) : size(size) 
+{
+    table = vector<HashNode*>(size, nullptr);
+}
+
+HashTable::~HashTable() 
+{
+    for (int i = 0; i < size; i++) 
+    {
+        HashNode* current = table[i];
+        while (current) 
+        {
+            HashNode* temp = current;
+            current = current->next;
+            delete temp;
+        }
+    }
+}
+
+int HashTable::hash(string key) 
+{
+    int hash = 0;
+    for (char c : key) 
+    {
+        hash = (hash * 31 + c) % size;
+    }
+    return hash;
+}
+
+void HashTable::insert(string key, Person* value) 
+{
+    int index = hash(key);
+    HashNode* newNode = new HashNode;
+    newNode->key = key;
+    newNode->value = value;
+    newNode->next = table[index];
+    table[index] = newNode;
+}
+
+Person* HashTable::search(string key) 
+{
+    int index = hash(key);
+    HashNode* current = table[index];
+    while (current) 
+    {
+        if (current->key == key) 
+        {
+            return current->value;
+        }
+        current = current->next;
+    }
+    return nullptr;
+}
+
+Person* mergeSortedLists(Person* left, Person* right) 
+{
+    Person dummy;
+    Person* tail = &dummy;
+    dummy.next = nullptr;
+
+    while (left != nullptr && right != nullptr) 
+    {
+        if (left->id <= right->id) 
+        {
+            tail->next = left;
+            left = left->next;
+        } 
+        else 
+        {
+            tail->next = right;
+            right = right->next;
+        }
+        tail = tail->next;
+    }
+
+    tail->next = (left != nullptr) ? left : right;
+    return dummy.next;
+}
+
+Person* mergeSortLL(Person* head) 
+{
+    if (head == nullptr || head->next == nullptr) 
+    {
+        return head;
+    }
+
+    Person* middle = head;
+    Person* fast = head->next;
+
+    while (fast != nullptr) 
+    {
+        fast = fast->next;
+        if (fast != nullptr) 
+        {
+            middle = middle->next;
+            fast = fast->next;
+        }
+    }
+
+    Person* left = head;
+    Person* right = middle->next;
+    middle->next = nullptr;
+
+    left = mergeSortLL(left);
+    right = mergeSortLL(right);
+
+    return mergeSortedLists(left, right);
+}
+
+Person* binarySearchLinkedList(Person* head, string target) 
+{
+    head = mergeSortLL(head); // sort linked list
+
+    Person* left = head;
+    Person* right = nullptr;
+
+    while (left != right) 
+    {
+        Person* middle = left;
+        int count = 0;
+        while (middle != right) 
+        {
+            middle = middle->next;
+            count++;
+        }
+        middle = left;
+        for (int i = 0; i < count / 2; i++) 
+        {
+            middle = middle->next;
+        }
+
+        if (middle->id == target) 
+        {
+            return middle;
+        } else if (middle->id < target) 
+        {
+            left = middle->next;
+        } else 
+        {
+            right = middle;
+        }
+    }
+
+    return nullptr;
+}
+void deallocateLinkedList(Person* head) {
+    while (head != nullptr) {
+        Person* temp = head;
+        head = head->next;
+        delete temp;
+    }
+}
+
+Person* insertDataIntoLinkedList(const json& data, Person* head, HashTable& hashTable) 
+{
+    Person* current=head;
+    
+    for (const auto& item : data) 
+    {
+        Person* person=new Person; // create new Person node
+        
+        person->id=item.value("_id","not found");
+        person->first_name=item.value("first_name","not found");
+        person->last_name=item.value("last_name","not found");
+        person->email=item.value("email","not found");
+        
+        if (item.find("children") !=item.end()) 
+        {
+            const json& children=item["children"];
+            person->children_first_name=children.value("first_name","not found");
+            person->children_last_name=children.value("last_name","not found");
+            person->children_email=children.value("email","not found");
+        } else 
+        {
+            person->children_first_name ="NULL";
+            person->children_last_name="NULL";
+            person->children_email="NULL";
+        }
+
+        person->next=nullptr; // initialize the next pointer
+        
+        if (current==nullptr) // if list is empty, set new node as head
+        {
+            current=person;
+            head = current;
+        } else                // else, append new node to end of the list
+        {
+            current->next=person;
+            current=person;
+        }
+        hashTable.insert(person->id, person);// for hash table search, linear search doesnt need it!!!!!
+    }
+    
+
+    return head;
+}
+
+Person* linearSearchLinkedList(const string& targetID, Person* head) 
+{
+    Person* current = head;
+    while (current != nullptr) 
+    {
+        if (current->id == targetID) 
+        {
+            return current;  // Return node if ID matches target
+        }
+        current = current->next;
+    }
+    return nullptr;  // nullptr if target not found
+}
+
+int main() {
+    ifstream f("Mdata.json");
+    json data = json::parse(f);
+	
+     Person* linkedListHead = nullptr;
+    int hashTableSize = 4;
+    HashTable hashTable(hashTableSize);
+    linkedListHead = insertDataIntoLinkedList(data, linkedListHead, hashTable);
+    
+    cout<<"Using linked list:"<<endl;
+    string searchIdLL, LLSA;
+    cout<<"Search algorithm: 'L' for Linear search - 'H' for Hash table - 'B' for Binary search"<<endl;
+    cin>>LLSA;
+    cout<<"Id of person to be found: "<<endl;
+    cin>>searchIdLL;
+    Person* resultLL = linearSearchLinkedList(searchIdLL, linkedListHead);
+    if(LLSA == "L")
+    {
+        if (resultLL != nullptr) 
+        {
+            cout << "Person found by ID '" << searchIdLL <<"' is " << resultLL->first_name <<" "<< resultLL->last_name << endl;
+            // Add more details of person later
+        } 
+        else 
+        {
+            cout << "Person with ID '"<< searchIdLL <<"' not found" << endl;
+        }
+        deallocateLinkedList(linkedListHead);
+    }
+    else if (LLSA == "H")
+    {
+        
+        Person* foundPersonLL = hashTable.search(searchIdLL);
+        if (foundPersonLL) 
+        {
+            cout << "Person found by ID '"<< searchIdLL<< "' is " << foundPersonLL->first_name << " "<< foundPersonLL->last_name << endl;
+            // Add more details of person later
+        }
+        else 
+        {
+            cout << "Person with ID '"<< searchIdLL <<"' not found" << endl;
+        }
+        deallocateLinkedList(linkedListHead);
+    }
+    else if (LLSA == "B")
+    {
+        Person* resultLL = binarySearchLinkedList(linkedListHead, searchIdLL);
+        if (resultLL) 
+        {
+            cout << "Person found by ID '"<< searchIdLL<< "' is " << resultLL->first_name << " " << resultLL->last_name << endl;
+        }  
+        else 
+        {
+            cout << "Person with ID '"<< searchIdLL <<"' not found" << endl;
+        }
+        deallocateLinkedList(linkedListHead);
+    }
+    else{ cout<<"No such search algorithm: '"<< LLSA <<"'"<<endl;}
+
+    return 0;
+}
